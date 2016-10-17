@@ -5,4 +5,7 @@
 *.[oa]
 *.swp
 *~
+
+# exclude generated directories
 .depend/
+.vagrant/

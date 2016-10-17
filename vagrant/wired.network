@@ -1,0 +1,5 @@
+[Match]
+Name=enp0s5
+
+[Network]
+DHCP=v4
