@@ -75,7 +75,11 @@ Vagrant.configure("2") do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "file", source: "./vagrant", destination: "/tmp/vagrant"
   config.vm.provision "shell", inline: <<-SHELL
+    # set grub timeout to 0 seconds
+    sed -i -e 's/.*GRUB_TIMEOUT.*/GRUB_TIMEOUT=0/g' /etc/default/grub
     dnf install -y make gcc
+
+    # set up a tap interface connected to a bridge
     mkdir -p /etc/systemd/network
     mv /tmp/vagrant/* /etc/systemd/network
     systemctl disable NetworkManager
