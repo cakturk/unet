@@ -12,9 +12,14 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "bento/fedora-23"
+  config.vm.box = "fedora/23-cloud-base"
+
+  config.vm.provider "parallels" do |prl, override|
+    override.vm.box = "bento/fedora-23"
+  end
 
   config.ssh.insert_key = false
+  config.vm.hostname = "unettest"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -88,5 +93,7 @@ Vagrant.configure("2") do |config|
     mv /tmp/vagrant/* /etc/systemd/network
     systemctl disable NetworkManager
     systemctl enable systemd-networkd
+
+    echo "Please reboot your vagrant box for the changes to take effect!" 1>&2
   SHELL
 end
