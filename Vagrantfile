@@ -83,7 +83,11 @@ Vagrant.configure("2") do |config|
     # set grub timeout to 0 seconds
     sed -i -e 's/.*GRUB_TIMEOUT.*/GRUB_TIMEOUT=0/g' /etc/default/grub
     # use the fastest available mirror
-    echo "fastestmirror=true" >> /etc/dnf/dnf.conf
+    if grep -q ".*fastestmirror.*=" /etc/dnf/dnf.conf; then
+        sed -i -e 's/.*fastestmirror.*/fastestmirror=true/g' /etc/dnf/dnf.conf
+    else
+        echo "fastestmirror=true" >> /etc/dnf/dnf.conf
+    fi
 
     # Install development tools
     dnf install -y make gcc
