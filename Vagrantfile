@@ -13,13 +13,29 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
   config.vm.box = "fedora/23-cloud-base"
+  config.vm.hostname = "unettest"
 
   config.vm.provider "parallels" do |prl, override|
     override.vm.box = "bento/fedora-23"
+    override.vm.network "private_network", type: "dhcp", auto_config: false
   end
 
-  config.ssh.insert_key = false
-  config.vm.hostname = "unettest"
+  config.vm.provider "libvirt" do |lb, override|
+    override.vm.network "private_network", type: "dhcp", auto_config: false
+  end
+
+  config.vm.provider "virtualbox" do |vb, override|
+    override.vm.box = "boxcutter/fedora24"
+
+    override.vm.network "private_network", type: "dhcp", adapter: 2
+    override.vm.network "private_network", type: "dhcp", auto_config: false, adapter: 3
+
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
+    vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+  end
+
+  # config.ssh.insert_key = false
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -34,7 +50,6 @@ Vagrant.configure("2") do |config|
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
   # config.vm.network "private_network", ip: "192.168.33.10"
-  config.vm.network "private_network", type: "dhcp", auto_config: false
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -82,6 +97,8 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     # set grub timeout to 0 seconds
     sed -i -e 's/.*GRUB_TIMEOUT.*/GRUB_TIMEOUT=0/g' /etc/default/grub
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+
     # disable selinux
     sed -i -e 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
     # use the fastest available mirror
@@ -100,6 +117,9 @@ Vagrant.configure("2") do |config|
     rm -fr /tmp/vagrant
     systemctl disable NetworkManager
     systemctl enable systemd-networkd
+    systemctl enable systemd-resolved
+    rm -f /etc/resolv.conf
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
     echo "Please reboot your vagrant box for the changes to take effect!" 1>&2
   SHELL
