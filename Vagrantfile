@@ -82,6 +82,8 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     # set grub timeout to 0 seconds
     sed -i -e 's/.*GRUB_TIMEOUT.*/GRUB_TIMEOUT=0/g' /etc/default/grub
+    # disable selinux
+    sed -i -e 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
     # use the fastest available mirror
     if grep -q ".*fastestmirror.*=" /etc/dnf/dnf.conf; then
         sed -i -e 's/.*fastestmirror.*/fastestmirror=true/g' /etc/dnf/dnf.conf
@@ -95,6 +97,7 @@ Vagrant.configure("2") do |config|
     # set up a tap interface connected to a bridge
     mkdir -p /etc/systemd/network
     mv /tmp/vagrant/* /etc/systemd/network
+    rm -fr /tmp/vagrant
     systemctl disable NetworkManager
     systemctl enable systemd-networkd
 
