@@ -12,16 +12,25 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
+
   config.vm.box = "fedora/23-cloud-base"
   config.vm.hostname = "unettest"
 
   config.vm.provider "parallels" do |prl, override|
     override.vm.box = "bento/fedora-23"
     override.vm.network "private_network", type: "dhcp", auto_config: false
+    override.vm.provision "shell" do |s|
+      s.path = "vagrant/provision.sh"
+      s.args = "parallels"
+    end
   end
 
   config.vm.provider "libvirt" do |lb, override|
     override.vm.network "private_network", type: "dhcp", auto_config: false
+    override.vm.provision "shell" do |s|
+      s.path = "vagrant/provision.sh"
+      s.args = "libvirt"
+    end
   end
 
   config.vm.provider "virtualbox" do |vb, override|
@@ -33,6 +42,10 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+    override.vm.provision "shell" do |s|
+      s.path = "vagrant/provision.sh"
+      s.args = "virtualbox"
+    end
   end
 
   # config.ssh.insert_key = false
@@ -93,34 +106,9 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  config.vm.provision "file", source: "./vagrant", destination: "/tmp/vagrant"
-  config.vm.provision "shell", inline: <<-SHELL
-    # set grub timeout to 0 seconds
-    sed -i -e 's/.*GRUB_TIMEOUT.*/GRUB_TIMEOUT=0/g' /etc/default/grub
-    grub2-mkconfig -o /boot/grub2/grub.cfg
-
-    # disable selinux
-    sed -i -e 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
-    # use the fastest available mirror
-    if grep -q ".*fastestmirror.*=" /etc/dnf/dnf.conf; then
-        sed -i -e 's/.*fastestmirror.*/fastestmirror=true/g' /etc/dnf/dnf.conf
-    else
-        echo "fastestmirror=true" >> /etc/dnf/dnf.conf
-    fi
-
-    # Install development tools
-    dnf install -y make gcc
-
-    # set up a tap interface connected to a bridge
-    mkdir -p /etc/systemd/network
-    mv /tmp/vagrant/* /etc/systemd/network
-    rm -fr /tmp/vagrant
-    systemctl disable NetworkManager
-    systemctl enable systemd-networkd
-    systemctl enable systemd-resolved
-    rm -f /etc/resolv.conf
-    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
-
-    echo "Please reboot your vagrant box for the changes to take effect!" 1>&2
-  SHELL
+  # config.vm.provision "file", source: "./vagrant", destination: "/tmp/vagrant"
+  # config.vm.provision "shell" do |s|
+  #   s.path = "vagrant/provision.sh"
+  #   s.args = [current_provider]
+  # end
 end
