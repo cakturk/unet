@@ -1,10 +1,7 @@
 #!/bin/sh
 
-CONFDIR=/etc/systemd/network/
-
-if [ -n "$CONFDIR" ]; then
-	mkdir -p $CONFDIR
-fi
+[ -z "$CONFDIR" ] && CONFDIR=/etc/systemd/network/
+[ -n "$CONFDIR" ] && mkdir -p $CONFDIR
 
 # $1: interface name
 # $2: network section
@@ -26,12 +23,23 @@ network_create() {
 netdev_create() {
 	local iface=$1
 	local kind=$2
+	local section="$(tr '[:lower:]' '[:upper:]' <<< ${kind:0:1})${kind:1}"
 
 	cat <<-EOF > "${CONFDIR}${iface}.netdev"
 		[NetDev]
 		Name=${iface}
 		Kind=${kind}
 	EOF
+
+	case $kind in
+		tun|tap)
+			cat <<-EOF >> "${CONFDIR}${iface}.netdev"
+
+				[$section]
+				User=vagrant
+			EOF
+			;;
+	esac
 }
 
 case $1 in
