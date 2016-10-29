@@ -57,9 +57,14 @@ static struct strbuf sb = {
 
 int main(int argc, char *argv[])
 {
-	char iface_name[IFNAMSIZ] = { 0 };
+	char iface_name[IFNAMSIZ];
 	char pbuf[4096];
 	int tun_fd;
+
+	if (argc > 1)
+		strcpy(iface_name, argv[1]);
+	else
+		strcpy(iface_name, "tap0");
 
 	tun_fd = tun_alloc(iface_name);
 	printf("iface: %s, tun_fd: %d, %zu\n", iface_name, tun_fd,
