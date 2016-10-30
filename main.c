@@ -12,6 +12,25 @@
 
 #include "netsniff.h"
 
+static void
+hwaddr_print(int fd)
+{
+	struct ifreq ifr;
+	unsigned char *mac;
+	int err;
+
+	if ((err = ioctl(fd, SIOCGIFHWADDR, &ifr)) == -1) {
+		printf("ERR: Could not get hwaddr: %s\n", strerror(errno));
+		return;
+	}
+
+	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
+
+	/* display mac address */
+	printf("hwaddr: %02x:%02x:%02x:%02x:%02x:%02x\n" ,
+	       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+}
+
 /*
  * Taken from Kernel Documentation/networking/tuntap.txt
  */
@@ -69,6 +88,7 @@ int main(int argc, char *argv[])
 	tun_fd = tun_alloc(iface_name);
 	printf("iface: %s, tun_fd: %d, %zu\n", iface_name, tun_fd,
 			sizeof(iface_name));
+	hwaddr_print(tun_fd);
 
 	while (1) {
 		struct machdr *mac;
