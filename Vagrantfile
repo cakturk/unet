@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
   # boxes at https://atlas.hashicorp.com/search.
 
   config.vm.box = "fedora/23-cloud-base"
-  config.vm.hostname = "unettest"
+  config.vm.hostname = "unet-devel"
 
   config.vm.provider "parallels" do |prl, override|
     override.vm.box = "bento/fedora-23"
@@ -78,7 +78,7 @@ Vagrant.configure("2") do |config|
   # argument is a set of non-required options.
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.synced_folder ".", "/vagrant_data", type: "nfs"
-  config.vm.define "unettest" do |unettest|
+  config.vm.define "unet-devel" do |unettest|
   end
 
   # Provider-specific configuration so you can fine-tune various
