@@ -86,6 +86,9 @@ int main(int argc, char *argv[])
 		strcpy(iface_name, "tap0");
 
 	tun_fd = tun_alloc(iface_name);
+	if (tun_fd <= 0)
+		exit(EXIT_FAILURE);
+
 	printf("iface: %s, tun_fd: %d, %zu\n", iface_name, tun_fd,
 			sizeof(iface_name));
 	hwaddr_print(tun_fd);
