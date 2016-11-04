@@ -1,3 +1,10 @@
+/*
+ * main.c
+ *
+ * Main entry point of this program.
+ *
+ * Copyright (C) Cihangir Akturk, 2016
+ */
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/stat.h>
@@ -11,61 +18,7 @@
 #include <stdlib.h>
 
 #include "netsniff.h"
-
-static void
-hwaddr_print(int fd)
-{
-	struct ifreq ifr;
-	unsigned char *mac;
-	int err;
-
-	if ((err = ioctl(fd, SIOCGIFHWADDR, &ifr)) == -1) {
-		printf("ERR: Could not get hwaddr: %s\n", strerror(errno));
-		return;
-	}
-
-	mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
-
-	/* display mac address */
-	printf("hwaddr: %02x:%02x:%02x:%02x:%02x:%02x\n" ,
-	       mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-}
-
-/*
- * Taken from Kernel Documentation/networking/tuntap.txt
- */
-static int tun_alloc(char *dev)
-{
-	struct ifreq ifr;
-	int fd, err;
-
-	if ((fd = open("/dev/net/tun", O_RDWR)) < 0 ) {
-		printf("Cannot open TUN/TAP dev\n"
-				"Make sure one exists with "
-				"'$ mknod /dev/net/tap c 10 200'\n");
-		exit(1);
-	}
-
-	memset(&ifr, 0, sizeof(ifr));
-
-	/* Flags: IFF_TUN   - TUN device (no Ethernet headers)
-	 *        IFF_TAP   - TAP device
-	 *
-	 *        IFF_NO_PI - Do not provide packet information
-	 */
-	ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-	if (*dev)
-		strncpy(ifr.ifr_name, dev, IFNAMSIZ);
-
-	if ((err = ioctl(fd, TUNSETIFF, &ifr)) < 0 ){
-		printf("ERR: Could not ioctl tun: %s\n", strerror(errno));
-		close(fd);
-		return err;
-	}
-
-	strcpy(dev, ifr.ifr_name);
-	return fd;
-}
+#include "netif.h"
 
 static char fmt_buf[1024];
 
@@ -74,30 +27,36 @@ static struct strbuf sb = {
 	.buf = fmt_buf,
 };
 
+static struct netif netif;
+
 int main(int argc, char *argv[])
 {
 	char iface_name[IFNAMSIZ];
 	char pbuf[4096];
-	int tun_fd;
+	uint8_t *mac;
+	ipv4_t *ip;
 
 	if (argc > 1)
 		strcpy(iface_name, argv[1]);
 	else
 		strcpy(iface_name, "tap0");
 
-	tun_fd = tun_alloc(iface_name);
-	if (tun_fd <= 0)
+	if (netif_init(&netif, iface_name, "10.10.120.40") == -1)
 		exit(EXIT_FAILURE);
 
-	printf("iface: %s, tun_fd: %d, %zu\n", iface_name, tun_fd,
-			sizeof(iface_name));
-	hwaddr_print(tun_fd);
+	mac = netif.hwaddr.data;
+	ip = &netif.ipaddr;
+	/* display mac address */
+	printf("iface: %s, hwaddr: %02x:%02x:%02x:%02x:%02x:%02x, "
+	       "ipaddr: %d.%d.%d.%d\n",
+	       iface_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
+	       ip->data[0], ip->data[1], ip->data[2], ip->data[3]);
 
 	while (1) {
 		struct machdr *mac;
 		int len;
 
-		len = read(tun_fd, pbuf, sizeof(pbuf));
+		len = read(netif.tunfd, pbuf, sizeof(pbuf));
 		printf("read: %d bytes\n", len);
 
 		mac = mac_hdr(pbuf);
@@ -106,5 +65,5 @@ int main(int argc, char *argv[])
 		printf("machdr: %s\n", sb.buf);
 	}
 
-	return 0;
+	exit(EXIT_SUCCESS);
 }
