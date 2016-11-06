@@ -24,6 +24,7 @@ struct arphdr {
  * The remaining fields are variable in size,
  * according to the sizes above.
  */
+	uint8_t ar_pld[];	/* pointer to the start of following data */
 #ifdef COMMENT_ONLY
 	uint8_t	ar_sha[];	/* sender hardware address */
 	uint8_t	ar_spa[];	/* sender protocol address */
