@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   config.vm.hostname = "unet-devel"
 
   config.vm.provider "parallels" do |prl, override|
-    override.vm.box = "bento/fedora-23"
+    override.vm.box = "boxcutter/fedora24"
     override.vm.network "private_network", type: "dhcp", auto_config: false
     override.vm.provision "shell" do |s|
       s.path = "vagrant/provision.sh"
