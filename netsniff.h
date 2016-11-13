@@ -24,6 +24,17 @@
 #  define __BIG_ENDIAN_BITFIELD 1
 #endif
 
+#undef ntohs
+
+#define __const_swab16(x) ((uint16_t)(			\
+	(((uint16_t)(x) & (uint16_t)0x00ffU) << 8) |	\
+	(((uint16_t)(x) & (uint16_t)0xff00U) >> 8)))
+
+#define ntohs(x)					\
+	(__builtin_constant_p((uint16_t)(x)) ?		\
+	 __const_swab16(x) :				\
+	 ntohs(x))
+
 #define BPF_SZ 80
 
 struct program_options {

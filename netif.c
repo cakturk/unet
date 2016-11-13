@@ -72,3 +72,21 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr)
 		return -1;
 	return 0;
 }
+
+#define INB_LEN 2048
+static char inbuf[INB_LEN];
+void eth_input(struct netif *netif, const void *buf);
+
+int
+netif_poll(struct netif *netif)
+{
+	ssize_t err;
+
+	for (;;) {
+		err = read(netif->tunfd, inbuf, INB_LEN);
+		printf("read: %zd bytes\n", err);
+		eth_input(netif, inbuf);
+	}
+
+	return 0;
+}

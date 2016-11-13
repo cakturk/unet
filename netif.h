@@ -23,5 +23,6 @@ struct netif {
 };
 
 extern int netif_init(struct netif *netif, char *ifnam, const char *ipaddr);
+extern int netif_poll(struct netif *netif);
 
 #endif /* end of include guard: NETIF_H_ */
