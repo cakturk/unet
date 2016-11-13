@@ -32,7 +32,7 @@ const char *ethertype_to_str(uint16_t type)
 	case ETH_P_ARP:  return "ARP";
 	case ETH_P_RARP: return "RARP";
 	case ETH_P_DEC:  return "DEC";
-	default:         return "Unknow ether type";
+	default:         return "Unknown ether type";
 	}
 }
 
