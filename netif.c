@@ -84,7 +84,8 @@ netif_poll(struct netif *netif)
 
 	for (;;) {
 		err = read(netif->tunfd, inbuf, INB_LEN);
-		printf("read: %zd bytes\n", err);
+		//printf("read: %zd bytes\n", err);
+                (void)err;
 		eth_input(netif, inbuf);
 	}
 

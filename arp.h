@@ -33,4 +33,11 @@ struct arphdr {
 #endif
 };
 
+#define arp_hdr(p) ((struct arphdr *)(p))
+
+#define ar_sha(p) ((p)->ar_pld)
+#define ar_spa(p) ((p)->ar_pld + (p)->ar_hln)
+#define ar_tha(p) ((p)->ar_pld + (p)->ar_hln + (p)->ar_pln)
+#define ar_tpa(p) ((p)->ar_pld + 2 * (p)->ar_hln + (p)->ar_pln)
+
 #endif /* end of include guard: ARP_H_ */
