@@ -10,6 +10,21 @@ const char *mac_str(char *__restrict buf, const uint8_t *__restrict addr)
 	return buf;
 }
 
+const char *
+macstr(void *__restrict str, const void *__restrict addr)
+{
+	int err;
+	const uint8_t *m = addr;
+
+	if (!str)
+		str = malloc(ETH_ADDRSTRLEN);
+
+	err = snprintf(str, ETH_ADDRSTRLEN, "%02x:%02x:%02x:%02x:%02x:%02x",
+		       m[0], m[1], m[2], m[3], m[4], m[5]);
+
+	return err >= ETH_ADDRSTRLEN ? NULL : str;
+}
+
 int eth_print(const struct machdr *mh, struct strbuf *sb)
 {
 	if (sb_room(sb) < (ETH_ADDRSTRLEN * 2) + 1)

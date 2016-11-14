@@ -35,6 +35,9 @@
 	 __const_swab16(x) :				\
 	 ntohs(x))
 
+
+extern const char *macstr(void *__restrict str, const void *__restrict addr);
+
 #define BPF_SZ 80
 
 struct program_options {
