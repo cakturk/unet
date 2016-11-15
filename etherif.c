@@ -13,10 +13,7 @@ static struct strbuf sb = {
 void
 eth_input(struct netif *netif, const void *buf)
 {
-	struct arphdr *a;
 	struct machdr *hdr;
-	char sip[sizeof("255.255.255.255")];
-	char tip[sizeof(sip)];
 
 	hdr = mac_hdr(buf);
 	sb_reset(&sb);
@@ -28,26 +25,7 @@ eth_input(struct netif *netif, const void *buf)
 		//printf("IP datagram received\n");
 		break;
 	case ntohs(ETH_P_ARP):
-		a = arp_hdr(buf + sizeof(*hdr));
-		printf("ARP packet\n"
-		       "ar_hrd: %hu\n"
-		       "ar_pro: %hu\n"
-		       "ar_hln: %u\n"
-		       "ar_pln: %u\n"
-		       "ar_op:  %hu\n"
-		       "ar_sha: %s\n"
-		       "ar_spa: %s\n"
-		       "ar_tha: %s\n"
-		       "ar_tpa: %s\n\n",
-		       ntohs(a->ar_hrd),
-		       ntohs(a->ar_pro),
-		       a->ar_hln,
-		       a->ar_pln,
-		       ntohs(a->ar_op),
-		       macstr(NULL, ar_sha(a)),
-		       inet_ntop(AF_INET, ar_spa(a), sip, 32),
-		       macstr(NULL, ar_tha(a)),
-		       inet_ntop(AF_INET, ar_tpa(a), tip, 32));
+		arp_print(arp_hdr(buf + sizeof(*hdr)));
 		break;
 	default:
 		//printf("eth type: %s\n", ethertype_to_str(ntohs(hdr->type)));

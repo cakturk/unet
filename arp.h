@@ -40,4 +40,6 @@ struct arphdr {
 #define ar_tha(p) ((p)->ar_pld + (p)->ar_hln + (p)->ar_pln)
 #define ar_tpa(p) ((p)->ar_pld + 2 * (p)->ar_hln + (p)->ar_pln)
 
+extern void arp_print(struct arphdr *hdr);
+
 #endif /* end of include guard: ARP_H_ */
