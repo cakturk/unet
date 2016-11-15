@@ -7,8 +7,8 @@
  */
 struct arphdr {
 	uint16_t ar_hrd;	/* hardware type, one of: */
-#define ARPHRD_ETHER 	1	/* ethernet */
-#define ARPHRD_FRELAY 	15	/* frame relay */
+#define ARPHRD_ETHER	1	/* ethernet */
+#define ARPHRD_FRELAY	15	/* frame relay */
 
 	uint16_t ar_pro;	/* protocol type */
 	uint8_t	 ar_hln;	/* length of hardware address */
@@ -18,7 +18,7 @@ struct arphdr {
 #define	ARPOP_REPLY	 2	/* arp reply */
 #define	ARPOP_REVREQUEST 3	/* rarp request */
 #define	ARPOP_REVREPLY	 4	/* rarp reply */
-#define ARPOP_INVREQUEST 8 	/* InArp request */
+#define ARPOP_INVREQUEST 8	/* InArp request */
 #define ARPOP_INVREPLY	 9	/* InArp reply */
 /*
  * The remaining fields are variable in size,
