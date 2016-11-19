@@ -19,6 +19,7 @@ Vagrant.configure("2") do |config|
   config.vm.provider "parallels" do |prl, override|
     override.vm.box = "boxcutter/fedora24"
     override.vm.network "private_network", type: "dhcp", auto_config: false
+    override.vm.synced_folder ".", "/vagrant_data", type: "nfs"
     override.vm.provision "shell" do |s|
       s.path = "vagrant/provision.sh"
       s.args = "parallels"
@@ -27,6 +28,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "libvirt" do |lb, override|
     override.vm.network "private_network", type: "dhcp", auto_config: false
+    override.vm.synced_folder ".", "/vagrant_data", type: "nfs"
     override.vm.provision "shell" do |s|
       s.path = "vagrant/provision.sh"
       s.args = "libvirt"
@@ -36,11 +38,10 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb, override|
     override.vm.box = "boxcutter/fedora24"
 
-    override.vm.network "private_network", type: "dhcp", adapter: 2
-    override.vm.network "private_network", type: "dhcp", auto_config: false, adapter: 3
+    override.vm.network "private_network", type: "dhcp", auto_config: false, adapter: 2
+    override.vm.synced_folder ".", "/vagrant_data"
 
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
-    vb.customize ["modifyvm", :id, "--nictype3", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
     override.vm.provision "shell" do |s|
       s.path = "vagrant/provision.sh"
@@ -77,7 +78,6 @@ Vagrant.configure("2") do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  config.vm.synced_folder ".", "/vagrant_data", type: "nfs"
   config.vm.define "unet-devel" do |unettest|
   end
 

@@ -53,7 +53,7 @@ case $1 in
 		;;
 	virtualbox)
 		echo "virtualbox detected" $CONFDIR
-		enslaved_eth=enp0s9
+		enslaved_eth=enp0s8
 		;;
 	*)
 		echo "Unkown provider: $1" 1>&2; exit 1
