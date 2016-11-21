@@ -43,6 +43,7 @@ Vagrant.configure("2") do |config|
 
     vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
     vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+    vb.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
     override.vm.provision "shell" do |s|
       s.path = "vagrant/provision.sh"
       s.args = "virtualbox"
