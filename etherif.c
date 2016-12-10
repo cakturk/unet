@@ -26,6 +26,7 @@ eth_input(struct netif *netif, const void *buf)
 		break;
 	case ntohs(ETH_P_ARP):
 		arp_print(arp_hdr(buf + sizeof(*hdr)));
+		arp_recv(netif, buf + sizeof(*hdr));
 		break;
 	default:
 		//printf("eth type: %s\n", ethertype_to_str(ntohs(hdr->type)));
