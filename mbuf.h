@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
+#ifndef MSIZE
 #define MSIZE 256
+#endif
 #define MLEN (MSIZE - sizeof(struct m_hdr))
 
 struct mbuf;
@@ -50,6 +52,13 @@ struct mbuf {
 struct mbuf *mb_alloc(void);
 void mb_free(struct mbuf *m);
 
+static inline void mb_init(struct mbuf *m)
+{
+	m->m_next = NULL;
+	m->m_head = m->m_data;
+	m->m_tail = m->m_data;
+}
+
 /*
  * Increase the headroom of an empty mbuf by reducing the tail room.
  * This is only allowed for an empty buffer. This function roughly
@@ -82,6 +91,11 @@ static inline void *mb_put(struct mbuf *m, unsigned int len)
 	uint8_t *oldtail = m->m_tail;
 	m->m_tail += len;
 	return oldtail;
+}
+
+static inline void mb_htrim(struct mbuf *m, unsigned int len)
+{
+	m->m_head -= len;
 }
 
 #endif /* end of include guard: MBUF_H_ */

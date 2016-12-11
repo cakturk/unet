@@ -5,9 +5,11 @@
 #include <net/if.h>       /* struct ifreq */
 #include <string.h>       /* memcpy and so on */
 #include <stdio.h>
+#include <stdlib.h>       /* exit */
 #include <linux/if_tun.h>
 
 #include "netif.h"
+#include "mbuf.h"
 
 /*
  * Taken from Kernel Documentation/networking/tuntap.txt
@@ -73,9 +75,9 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr)
 	return 0;
 }
 
-#define INB_LEN 2048
-static char inbuf[INB_LEN];
-void eth_input(struct netif *netif, const void *buf);
+static struct mbuf mbuf;
+
+void eth_input(struct netif *netif, struct mbuf *m);
 
 int
 netif_poll(struct netif *netif)
@@ -83,10 +85,14 @@ netif_poll(struct netif *netif)
 	ssize_t err;
 
 	for (;;) {
-		err = read(netif->tunfd, inbuf, INB_LEN);
-		//printf("read: %zd bytes\n", err);
-                (void)err;
-		eth_input(netif, inbuf);
+		mb_init(&mbuf);
+		err = read(netif->tunfd, mbuf.m_tail, mb_tailroom(&mbuf));
+		if (err <= 0) {
+			fprintf(stderr, "Error reading interface\n");
+			exit(EXIT_FAILURE);
+		}
+		mb_put(&mbuf, err);
+		eth_input(netif, &mbuf);
 	}
 
 	return 0;

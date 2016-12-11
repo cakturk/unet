@@ -6,9 +6,7 @@ struct mbuf *mb_alloc(void)
 	struct mbuf *m;
 
 	m = malloc(sizeof(struct mbuf));
-	m->m_next = NULL;
-	m->m_head = m->m_data;
-	m->m_head = m->m_data;
+	mb_init(m);
 
 	return m;
 }
