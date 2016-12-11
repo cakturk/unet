@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "netsniff.h"
 #include "netif.h"
+#include "mbuf.h"
 #include "arp.h"
 
 static inline void memswap(void *__restrict dst, void *__restrict src,
@@ -46,11 +47,11 @@ arp_reply(struct netif *rcvif, struct arphdr *a)
 }
 
 void
-arp_recv(struct netif *rcvif, const char *buf)
+arp_recv(struct netif *rcvif, struct mbuf *m)
 {
 	struct arphdr *hdr;
 
-	hdr = arp_hdr(buf);
+	hdr = arp_hdr(mb_htrim(m, sizeof(*hdr)));
 	switch (hdr->ar_op) {
 	case ntohs(ARPOP_REQUEST):
 		arp_print(hdr);

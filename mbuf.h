@@ -59,6 +59,11 @@ static inline void mb_init(struct mbuf *m)
 	m->m_tail = m->m_data;
 }
 
+static inline void *mb_head(struct mbuf *m)
+{
+	return m->m_head;
+}
+
 /*
  * Increase the headroom of an empty mbuf by reducing the tail room.
  * This is only allowed for an empty buffer. This function roughly
@@ -93,9 +98,11 @@ static inline void *mb_put(struct mbuf *m, unsigned int len)
 	return oldtail;
 }
 
-static inline void mb_htrim(struct mbuf *m, unsigned int len)
+static inline void *mb_htrim(struct mbuf *m, unsigned int len)
 {
-	m->m_head -= len;
+	uint8_t *oldhead = m->m_head;
+	m->m_head += len;
+	return oldhead;
 }
 
 #endif /* end of include guard: MBUF_H_ */
