@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdio.h>
 #include "netsniff.h"
 #include "netif.h"
@@ -37,13 +38,21 @@ arp_print(struct arphdr *hdr)
 }
 
 void
-arp_reply(struct netif *rcvif, struct arphdr *a)
+arp_reply(struct netif *rcvif, struct arphdr *req)
 {
-	char tmp[4];
+	struct mbuf mbuf;
+	struct arphdr *resp;
 
-	a->ar_op  = ARPOP_REPLY;
-	memswap(ar_tpa(a), ar_spa(a), tmp, 4);
-	memcpy(ar_tha(a), ar_sha(a), a->ar_hln);
+	mb_init(&mbuf);
+	resp = mb_head(&mbuf);
+	memcpy(resp, req, offsetof(typeof(*resp), ar_op));
+	resp->ar_op  = ntohs(ARPOP_REPLY);
+	memcpy(ar_sha(resp), &rcvif->hwaddr, HWADDR_LEN);
+	memcpy(ar_spa(resp), &rcvif->ipaddr, sizeof(rcvif->ipaddr));
+	memcpy(ar_tha(resp), ar_sha(req), HWADDR_LEN);
+	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
+	printf("Response\n");
+	arp_print(resp);
 }
 
 void
@@ -55,6 +64,7 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 	switch (hdr->ar_op) {
 	case ntohs(ARPOP_REQUEST):
 		arp_print(hdr);
+		arp_reply(rcvif, hdr);
 		break;
 	default:
 		break;
