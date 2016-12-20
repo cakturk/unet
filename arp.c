@@ -46,7 +46,7 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 	mb_init(&mbuf);
 	resp = mb_head(&mbuf);
 	memcpy(resp, req, offsetof(typeof(*resp), ar_op));
-	resp->ar_op  = ntohs(ARPOP_REPLY);
+	resp->ar_op  = htons(ARPOP_REPLY);
 	memcpy(ar_sha(resp), &rcvif->hwaddr, HWADDR_LEN);
 	memcpy(ar_spa(resp), &rcvif->ipaddr, sizeof(rcvif->ipaddr));
 	memcpy(ar_tha(resp), ar_sha(req), HWADDR_LEN);
@@ -62,7 +62,7 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 
 	hdr = arp_hdr(mb_htrim(m, sizeof(*hdr)));
 	switch (hdr->ar_op) {
-	case ntohs(ARPOP_REQUEST):
+	case htons(ARPOP_REQUEST):
 		arp_print(hdr);
 		arp_reply(rcvif, hdr);
 		break;

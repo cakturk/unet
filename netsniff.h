@@ -24,17 +24,27 @@
 #  define __BIG_ENDIAN_BITFIELD 1
 #endif
 
-#undef ntohs
-
 #define __const_swab16(x) ((uint16_t)(			\
 	(((uint16_t)(x) & (uint16_t)0x00ffU) << 8) |	\
 	(((uint16_t)(x) & (uint16_t)0xff00U) >> 8)))
 
+#undef ntohs
+#undef htons
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define ntohs(x)					\
 	(__builtin_constant_p((uint16_t)(x)) ?		\
 	 __const_swab16(x) :				\
 	 ntohs(x))
 
+#define htons(x)					\
+	(__builtin_constant_p((uint16_t)(x)) ?		\
+	 __const_swab16(x) :				\
+	 htons(x))
+#else
+#define ntohs(x) ((uint16_t)(x))
+#define htons(x) ((uint16_t)(x))
+#endif
 
 extern const char *macstr(void *__restrict str, const void *__restrict addr);
 
