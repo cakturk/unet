@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	else
 		strcpy(iface_name, "tap0");
 
-	if (netif_init(&netif, iface_name, "10.10.120.40") == -1)
+	if (netif_init(&netif, iface_name, "172.28.128.44") == -1)
 		exit(EXIT_FAILURE);
 
 	mac = netif.hwaddr.data;

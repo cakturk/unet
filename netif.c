@@ -1,4 +1,5 @@
 #include <unistd.h>       /* close() syscall */
+#include <errno.h>
 #include <fcntl.h>        /* open() syscall */
 #include <arpa/inet.h>    /* inet_pton */
 #include <sys/ioctl.h>    /* ioctl SIOCGIFHWADDR */
@@ -9,6 +10,7 @@
 #include <linux/if_tun.h>
 
 #include "netif.h"
+#include "etherif.h"
 #include "mbuf.h"
 
 /*
@@ -77,8 +79,6 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr)
 
 static struct mbuf mbuf;
 
-void eth_input(struct netif *netif, struct mbuf *m);
-
 int
 netif_poll(struct netif *netif)
 {
@@ -96,4 +96,21 @@ netif_poll(struct netif *netif)
 	}
 
 	return 0;
+}
+
+void
+netif_xmit(struct netif *ifp, struct mbuf *m)
+{
+	ssize_t n;
+	unsigned int dlen;
+
+	while ((dlen = mb_datalen(m))) {
+		n = write(ifp->tunfd, mb_head(m), dlen);
+		if (n < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		mb_htrim(m, n);
+	}
 }

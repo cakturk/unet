@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include "netsniff.h"
+#include "netif.h"
 #include "arp.h"
 #include "mbuf.h"
-
-struct netif;
 
 static char fmt_buf[1024];
 static struct strbuf sb = {
@@ -22,7 +21,6 @@ eth_input(struct netif *netif, struct mbuf *m)
 
 	switch (hdr->type) {
 	case ntohs(ETH_P_IP):
-		//printf("IP datagram received\n");
 		break;
 	case ntohs(ETH_P_ARP):
 		arp_recv(netif, m);
@@ -30,4 +28,17 @@ eth_input(struct netif *netif, struct mbuf *m)
 	default:
 		break;
 	}
+}
+
+void
+eth_output(struct netif *ifp, struct mbuf *m, uint8_t *dst)
+{
+	struct machdr *eh;
+
+	eh = mb_push(m, sizeof(*eh));
+	memcpy(eh->dst, dst, ETH_ALEN);
+	memcpy(eh->src, &ifp->hwaddr, ETH_ALEN);
+	eh->type = htons(ETH_P_ARP);
+
+	netif_xmit(ifp, m);
 }

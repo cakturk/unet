@@ -22,7 +22,10 @@ struct netif {
 	hwaddr_t	hwaddr;
 };
 
+struct mbuf;
+
 extern int netif_init(struct netif *netif, char *ifnam, const char *ipaddr);
 extern int netif_poll(struct netif *netif);
+extern void netif_xmit(struct netif *ifp, struct mbuf *m);
 
 #endif /* end of include guard: NETIF_H_ */

@@ -64,6 +64,11 @@ static inline void *mb_head(struct mbuf *m)
 	return m->m_head;
 }
 
+static inline unsigned int mb_datalen(struct mbuf *m)
+{
+	return m->m_tail - m->m_head;
+}
+
 /*
  * Increase the headroom of an empty mbuf by reducing the tail room.
  * This is only allowed for an empty buffer. This function roughly

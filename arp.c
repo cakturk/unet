@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "netsniff.h"
 #include "netif.h"
+#include "etherif.h"
 #include "mbuf.h"
 #include "arp.h"
 
@@ -16,7 +17,7 @@ arp_print(struct arphdr *hdr)
 	char sha[sizeof("ff:ff:ff:ff:ff:ff")];
 	char tha[sizeof(sha)];
 
-	printf("ARP packet\n"
+	printf("ARP packet (%zu) bytes\n"
 	       "ar_hrd: %hu\n"
 	       "ar_pro: %hu\n"
 	       "ar_hln: %u\n"
@@ -26,6 +27,7 @@ arp_print(struct arphdr *hdr)
 	       "ar_spa: %s\n"
 	       "ar_tha: %s\n"
 	       "ar_tpa: %s\n\n",
+	       arp_hdr_len(hdr),
 	       ntohs(hdr->ar_hrd),
 	       ntohs(hdr->ar_pro),
 	       hdr->ar_hln,
@@ -37,14 +39,15 @@ arp_print(struct arphdr *hdr)
 	       inet_ntop(AF_INET, ar_tpa(hdr), tip, 32));
 }
 
-void
+static void
 arp_reply(struct netif *rcvif, struct arphdr *req)
 {
 	struct mbuf mbuf;
 	struct arphdr *resp;
 
 	mb_init(&mbuf);
-	resp = mb_head(&mbuf);
+	mb_reserve(&mbuf, ETH_HLEN);
+	resp = mb_put(&mbuf, ARP4_HDR_LEN);
 	memcpy(resp, req, offsetof(typeof(*resp), ar_op));
 	resp->ar_op  = htons(ARPOP_REPLY);
 	memcpy(ar_sha(resp), &rcvif->hwaddr, HWADDR_LEN);
@@ -53,6 +56,7 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
 	printf("Response\n");
 	arp_print(resp);
+	eth_output(rcvif, &mbuf, ar_tha(resp));
 }
 
 void

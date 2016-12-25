@@ -33,6 +33,11 @@ struct arphdr {
 #endif
 };
 
+#define __arp_hdr_len(ar_hln, ar_pln)					\
+	(sizeof(struct arphdr) + 2 * (ar_hln) + 2 * (ar_pln))
+#define arp_hdr_len(ap) (__arp_hdr_len((ap)->ar_hln, (ap)->ar_pln))
+#define ARP4_HDR_LEN	28
+
 #define arp_hdr(p) ((struct arphdr *)(p))
 
 #define ar_sha(p) ((p)->ar_pld)
@@ -44,6 +49,6 @@ struct netif;
 struct mbuf;
 
 void arp_print(struct arphdr *hdr);
-void arp_recv(struct netif *rcvif, struct mbuf *m);
+void arp_recv(struct netif *ifp, struct mbuf *m);
 
 #endif /* end of include guard: ARP_H_ */
