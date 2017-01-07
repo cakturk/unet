@@ -44,13 +44,14 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 {
 	struct mbuf mbuf;
 	struct arphdr *resp;
+	static unsigned char mac[] = {0x56, 0x85, 0x6f, 0x7f, 0xa0, 0xc1};
 
 	mb_init(&mbuf);
 	mb_reserve(&mbuf, ETH_HLEN);
 	resp = mb_put(&mbuf, ARP4_HDR_LEN);
 	memcpy(resp, req, offsetof(typeof(*resp), ar_op));
 	resp->ar_op  = htons(ARPOP_REPLY);
-	memcpy(ar_sha(resp), &rcvif->hwaddr, HWADDR_LEN);
+	memcpy(ar_sha(resp), mac, HWADDR_LEN);
 	memcpy(ar_spa(resp), &rcvif->ipaddr, sizeof(rcvif->ipaddr));
 	memcpy(ar_tha(resp), ar_sha(req), HWADDR_LEN);
 	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
