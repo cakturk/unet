@@ -6,7 +6,7 @@
 #define HWADDR_LEN 6
 
 typedef struct {
-	unsigned char data[HWADDR_LEN];
+	uint8_t data[HWADDR_LEN];
 } hwaddr_t;
 
 typedef struct {
