@@ -49,7 +49,7 @@ static int tun_alloc(char *dev)
 	return fd;
 }
 
-static int
+static int __attribute__ ((unused))
 hwaddr_get(int fd, void *dst)
 {
 	struct ifreq ifr;
@@ -62,7 +62,8 @@ hwaddr_get(int fd, void *dst)
 }
 
 int
-netif_init(struct netif *netif, char *ifnam, const char *ipaddr)
+netif_init(struct netif *netif, char *ifnam, const char *ipaddr,
+	   const hwaddr_t *ether)
 {
 	int tunfd;
 
@@ -72,8 +73,7 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr)
 
 	if (!inet_pton(AF_INET, ipaddr, &netif->ipaddr))
 		return -1;
-	if (hwaddr_get(tunfd, &netif->hwaddr))
-		return -1;
+	memcpy(&netif->hwaddr, ether, ETH_ALEN);
 	return 0;
 }
 

@@ -24,7 +24,8 @@ struct netif {
 
 struct mbuf;
 
-extern int netif_init(struct netif *netif, char *ifnam, const char *ipaddr);
+extern int netif_init(struct netif *netif, char *ifnam, const char *ipaddr,
+		      const hwaddr_t *ether);
 extern int netif_poll(struct netif *netif);
 extern void netif_xmit(struct netif *ifp, struct mbuf *m);
 

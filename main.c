@@ -22,6 +22,8 @@
 
 static struct netif netif;
 
+#define MACADDR ((hwaddr_t *)"\x56\x85\x6f\x7f\xa0\xc1")
+
 int main(int argc, char *argv[])
 {
 	char iface_name[IFNAMSIZ];
@@ -33,7 +35,7 @@ int main(int argc, char *argv[])
 	else
 		strcpy(iface_name, "tap0");
 
-	if (netif_init(&netif, iface_name, "172.28.128.44") == -1)
+	if (netif_init(&netif, iface_name, "172.28.128.44", MACADDR) == -1)
 		exit(EXIT_FAILURE);
 
 	mac = netif.hwaddr.data;
