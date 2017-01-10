@@ -6,6 +6,8 @@
 #include "mbuf.h"
 #include "arp.h"
 
+#define ARP_NR_MAX_ENTRIES 10
+
 static unsigned char zeromac[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static unsigned char broadcastmac[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
@@ -15,6 +17,73 @@ static inline void memswap(void *__restrict dst, void *__restrict src,
 static void arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip,
 			hwaddr_t *ether);
 
+struct arpentry {
+	uint16_t    ae_st; /* ARP entry state, one of: */
+#define ARP_E_FREE	 0
+#define ARP_E_INCOMPLETE 1
+#define ARP_E_COMPLETE	 2
+
+	hwaddr_t    ae_ha;
+	ipv4_t	    ae_ip;
+	struct mbuf *ae_wq_head;
+};
+
+static struct arpentry arp_tab[ARP_NR_MAX_ENTRIES];
+
+struct arpentry *arp_lookup(ipv4_t ip)
+{
+	struct arpentry *ae;
+
+	for (ae = &arp_tab[0]; ae < &arp_tab[ARP_NR_MAX_ENTRIES]; ae++) {
+		if (ip.addr == ae->ae_ip.addr)
+			return ae;
+	}
+	return NULL;
+}
+
+struct arpentry *arp_newentry(ipv4_t addr)
+{
+	struct arpentry *ae;
+
+	for (ae = &arp_tab[0]; ae < &arp_tab[ARP_NR_MAX_ENTRIES]; ae++) {
+		if (ae->ae_st == ARP_E_FREE)
+			goto got_it;
+	}
+	ae = &arp_tab[0];
+got_it:
+	ae->ae_ip = addr;
+	ae->ae_st = ARP_E_INCOMPLETE;
+
+	return ae;
+}
+
+int arp_resolve(ipv4_t dstaddr, struct mbuf *m, hwaddr_t *dsthw)
+{
+	struct arpentry *ae;
+	struct mbuf **last;
+
+	if ((ae = arp_lookup(dstaddr))) {
+		switch (ae->ae_st) {
+		case ARP_E_COMPLETE:
+			memcpy(&dsthw, &ae->ae_ha, HWADDR_LEN);
+			return 1;
+		case ARP_E_INCOMPLETE:
+			break;
+		case ARP_E_FREE:
+			ae->ae_st = ARP_E_INCOMPLETE;
+		}
+	} else {
+		ae = arp_newentry(dstaddr);
+	}
+
+	if (m) {
+		last = mb_lastpp(&ae->ae_wq_head);
+		*last = m;
+	}
+
+	return 0;
+}
+
 void
 arp_print(struct arphdr *hdr)
 {
@@ -22,6 +91,7 @@ arp_print(struct arphdr *hdr)
 	char tip[sizeof(sip)];
 	char sha[sizeof("ff:ff:ff:ff:ff:ff")];
 	char tha[sizeof(sha)];
+	printf("sizeof: %zu\n", sizeof(struct arpentry));
 
 	printf("ARP packet (%zu) bytes\n"
 	       "ar_hrd: %hu\n"
@@ -83,6 +153,8 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 			arp_request(rcvif, &sip, &tip, &rcvif->hwaddr);
 		}
 		break;
+	case htons(ARPOP_REPLY):
+		printf("arp reply received\n");
 	default:
 		break;
 	}

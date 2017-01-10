@@ -64,6 +64,20 @@ static inline void *mb_head(struct mbuf *m)
 	return m->m_head;
 }
 
+static inline struct mbuf *mb_last(struct mbuf *m)
+{
+	while (m->m_next)
+		m = m->m_next;
+	return m;
+}
+
+static inline struct mbuf **mb_lastpp(struct mbuf **m)
+{
+	while (*m)
+		m = &(*m)->m_next;
+	return m;
+}
+
 static inline unsigned int mb_datalen(struct mbuf *m)
 {
 	return m->m_tail - m->m_head;
