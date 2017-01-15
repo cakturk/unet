@@ -35,6 +35,9 @@ endif
 $(PROGRAM): $(OBJECTS)
 	$(E_LD)$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROGRAM) $(OBJECTS) $(LDLIBS)
 
-.PHONY: clean
+.PHONY: clean check
 clean:
 	-$(RM) -r $(PROGRAM) $(OBJECTS) *~ core.* $(dep_dirs)
+
+check:
+	@$(MAKE) -C t/ check
