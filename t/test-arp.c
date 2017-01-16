@@ -31,11 +31,46 @@ MU_TEST(test_arp_lookup)
 	mu_check(ent->ae_ip.addr == addr.addr);
 }
 
+MU_TEST(test_arp_resolve)
+{
+	ipv4_t addr = { .data = {192, 168, 1, 41} };
+	struct mbuf m1, m2, m3;
+	struct arpentry *ent;
+	hwaddr_t ether;
+	int err;
+
+	err = arp_resolve(addr, NULL, &ether);
+	mu_assert_int_eq(0, err);
+
+	ent = &arp_tab[0];
+	mu_check(ent->ae_wq_head == NULL);
+	mu_assert_int_eq(ARP_E_INCOMPLETE, ent->ae_st);
+
+	mb_init(&m1);
+
+	err = arp_resolve(addr, &m1, &ether);
+	mu_assert_int_eq(0, err);
+	mu_check(ent->ae_wq_head == &m1);
+	mu_check(ent->ae_wq_head->m_next == NULL);
+
+	mb_init(&m2);
+	m1.m_next = &m2;
+
+	mb_init(&m3);
+	err = arp_resolve(addr, &m3, &ether);
+	mu_assert_int_eq(0, err);
+	mu_check(ent->ae_wq_head == &m1);
+	mu_check(ent->ae_wq_head->m_next == &m2);
+	mu_check(ent->ae_wq_head->m_next->m_next == &m3);
+	mu_check(ent->ae_wq_head->m_next->m_next->m_next == NULL);
+}
+
 MU_TEST_SUITE(test_suite)
 {
 	MU_SUITE_CONFIGURE(test_setup, NULL);
 	MU_RUN_TEST(test_arp_newent);
 	MU_RUN_TEST(test_arp_lookup);
+	MU_RUN_TEST(test_arp_resolve);
 }
 
 int
