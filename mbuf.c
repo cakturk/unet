@@ -6,6 +6,8 @@
 static struct mbuf mpool[MBUF_POOL_LEN];
 static struct mbuf *free_list;
 
+void mbuf_link(struct mbuf **head, struct mbuf *first, struct mbuf *last);
+
 struct mbuf *mb_alloc(void)
 {
 	struct mbuf *m;
@@ -48,7 +50,7 @@ struct mbuf *mb_pool_chain_alloc(unsigned int nrbufs)
 {
 	struct mbuf *m, **curr = &free_list;
 
-	if (!*curr)
+	if (!*curr || nrbufs < 1)
 		return NULL;
 
 	while (nrbufs--) {
@@ -65,6 +67,11 @@ struct mbuf *mb_pool_chain_alloc(unsigned int nrbufs)
 	*curr = NULL;
 
 	return m;
+}
+
+void mb_pool_chain_free(struct mbuf *m)
+{
+	mbuf_link(&free_list, m, mb_last(m));
 }
 
 static inline void mb_pool_free(struct mbuf *m)

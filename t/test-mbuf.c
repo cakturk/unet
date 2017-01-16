@@ -9,6 +9,18 @@ static void test_setup()
 	mb_pool_init();
 }
 
+static int chain_nr_elems(struct mbuf *m)
+{
+	int count = 0;
+
+	while (m) {
+		m = m->m_next;
+		count++;
+	}
+
+	return count;
+}
+
 MU_TEST(test_mb_last)
 {
 	struct mbuf *m, *last, **pp;
@@ -74,11 +86,86 @@ MU_TEST(test_mb_pool_alloc)
 	}
 }
 
+/*
+ * Test for edge cases like calling the func with a nrbuffs of zero
+ */
+MU_TEST(test_mb_pool_chain_alloc_with_a_size_of_zero)
+{
+	struct mbuf *m;
+
+	m = mb_pool_chain_alloc(0);
+	mu_check(m == NULL);
+	mu_check(free_list != NULL);
+}
+
+struct mbuf_chain_test_info {
+	struct {
+		struct mbuf *m;
+
+		/* number of elements in the chain */
+		int n;
+	} d[MBUF_POOL_LEN];
+	struct mbuf **free_list;
+	int tot_free;
+};
+
+static void assert_alloc(int n, struct mbuf_chain_test_info *ti, int idx)
+{
+	struct mbuf *m;
+	int nr_mbuffs;
+
+	m = mb_pool_chain_alloc(n);
+	nr_mbuffs = chain_nr_elems(m);
+
+	/* Check if we really allocated a chain of 'n' mbufs */
+	mu_check(m != NULL);
+	mu_assert_int_eq(n, nr_mbuffs);
+
+	ti->d[idx].m = m;
+	ti->d[idx].n = n;
+	ti->tot_free -= n;
+
+	mu_assert_int_eq(ti->tot_free, chain_nr_elems(*ti->free_list));
+}
+
+static void assert_free(struct mbuf_chain_test_info *ti, int idx)
+{
+	int nr_mbuffs;
+
+	mb_pool_chain_free(ti->d[idx].m);
+	ti->tot_free += ti->d[idx].n;
+
+	nr_mbuffs = chain_nr_elems(*ti->free_list);
+	mu_assert_int_eq(ti->tot_free, nr_mbuffs);
+}
+
+MU_TEST(test_mb_pool_chain_alloc)
+{
+	struct mbuf_chain_test_info info = {
+		.free_list = &free_list,
+		.tot_free  = MBUF_POOL_LEN
+	};
+	int i = 0;
+
+	mu_assert_int_eq(info.tot_free, chain_nr_elems(free_list));
+
+	assert_alloc(3, &info, i++);
+	assert_alloc(4, &info, i++);
+	assert_alloc(1, &info, i++);
+	assert_alloc(5, &info, i++);
+	assert_alloc(3, &info, i++);
+
+	while (--i >= 0)
+		assert_free(&info, i);
+}
+
 MU_TEST_SUITE(test_suite)
 {
 	MU_SUITE_CONFIGURE(test_setup, NULL);
 	MU_RUN_TEST(test_mb_last);
 	MU_RUN_TEST(test_mb_pool_alloc);
+	MU_RUN_TEST(test_mb_pool_chain_alloc_with_a_size_of_zero);
+	MU_RUN_TEST(test_mb_pool_chain_alloc);
 }
 
 int
