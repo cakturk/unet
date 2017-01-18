@@ -118,12 +118,16 @@ arp_print(struct arphdr *hdr)
 static void
 arp_reply(struct netif *rcvif, struct arphdr *req)
 {
-	struct mbuf mbuf;
+	struct mbuf *mbuf;
 	struct arphdr *resp;
 
-	mb_init(&mbuf);
-	mb_reserve(&mbuf, ETH_HLEN);
-	resp = mb_put(&mbuf, ARP4_HDR_LEN);
+	mbuf = mb_alloc();
+	if (!mbuf)
+		return;
+
+	mb_init(mbuf);
+	mb_reserve(mbuf, ETH_HLEN);
+	resp = mb_put(mbuf, ARP4_HDR_LEN);
 	memcpy(resp, req, offsetof(typeof(*resp), ar_op));
 	resp->ar_op  = htons(ARPOP_REPLY);
 	memcpy(ar_sha(resp), &rcvif->hwaddr, HWADDR_LEN);
@@ -132,7 +136,7 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
 	printf("Response\n");
 	arp_print(resp);
-	eth_output(rcvif, &mbuf, ar_tha(resp));
+	eth_output(rcvif, mbuf, ar_tha(resp));
 }
 
 void
@@ -163,13 +167,15 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 static void
 arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip, hwaddr_t *ether)
 {
-	struct mbuf mbuf;
+	struct mbuf *m;
 	struct arphdr *ap;
 
-	mb_init(&mbuf);
-	mb_reserve(&mbuf, ETH_HLEN);
+	if ((m = mb_alloc()))
+	    return;
 
-	ap = mb_put(&mbuf, ARP4_HDR_LEN);
+	mb_reserve(m, ETH_HLEN);
+
+	ap = mb_put(m, ARP4_HDR_LEN);
 	ap->ar_hrd = htons(ARPHRD_ETHER);
 	ap->ar_pro = htons(ETH_P_IP);
 	ap->ar_hln = ETH_ALEN;
@@ -182,7 +188,7 @@ arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip, hwaddr_t *ether)
 	memcpy(ar_tpa(ap), tip, sizeof(*tip));
 	printf("Request\n");
 	arp_print(ap);
-	eth_output(ifp, &mbuf, broadcastmac);
+	eth_output(ifp, m, broadcastmac);
 }
 
 static inline void

@@ -1,26 +1,36 @@
 #include <stdlib.h>
 #include "mbuf.h"
 
+#ifndef MBUF_POOL_LEN
 #define MBUF_POOL_LEN 16
+#endif
 
 static struct mbuf mpool[MBUF_POOL_LEN];
 static struct mbuf *free_list;
 
 void mbuf_link(struct mbuf **head, struct mbuf *first, struct mbuf *last);
+static inline struct mbuf *mb_pool_alloc(void);
+static inline void mb_pool_free(struct mbuf *m);
 
 struct mbuf *mb_alloc(void)
 {
 	struct mbuf *m;
-
+#if MBUF_POOL_LEN
+	m = mb_pool_alloc();
+#else
 	m = malloc(sizeof(struct mbuf));
 	mb_init(m);
-
+#endif
 	return m;
 }
 
 void mb_free(struct mbuf *m)
 {
+#if MBUF_POOL_LEN
+	mb_pool_free(m);
+#else
 	free(m);
+#endif
 }
 
 void mb_pool_init(void)

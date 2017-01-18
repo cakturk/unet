@@ -77,22 +77,28 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr,
 	return 0;
 }
 
-static struct mbuf mbuf;
-
 int
 netif_poll(struct netif *netif)
 {
+	struct mbuf *m;
 	ssize_t err;
 
+	mb_pool_init();
+
 	for (;;) {
-		mb_init(&mbuf);
-		err = read(netif->tunfd, mbuf.m_tail, mb_tailroom(&mbuf));
+		m = mb_alloc();
+		if (!m) {
+			fprintf(stderr, "Out of mem!\n");
+			exit(EXIT_FAILURE);
+		}
+		err = read(netif->tunfd, m->m_tail, mb_tailroom(m));
 		if (err <= 0) {
 			fprintf(stderr, "Error reading interface\n");
 			exit(EXIT_FAILURE);
 		}
-		mb_put(&mbuf, err);
-		eth_input(netif, &mbuf);
+		mb_put(m, err);
+		eth_input(netif, m);
+		mb_free(m);
 	}
 
 	return 0;
@@ -113,4 +119,5 @@ netif_xmit(struct netif *ifp, struct mbuf *m)
 		}
 		mb_htrim(m, n);
 	}
+	mb_free(m);
 }

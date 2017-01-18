@@ -51,6 +51,7 @@ struct mbuf {
 
 struct mbuf *mb_alloc(void);
 void mb_free(struct mbuf *m);
+void mb_pool_init(void);
 
 static inline void mb_init(struct mbuf *m)
 {
