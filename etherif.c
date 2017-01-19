@@ -21,7 +21,7 @@ eth_input(struct netif *netif, struct mbuf *m)
 
 	switch (hdr->type) {
 	case ntohs(ETH_P_IP):
-		printf("ip pkt received\n");
+		ip_input(netif, m);
 		break;
 	case ntohs(ETH_P_ARP):
 		arp_recv(netif, m);

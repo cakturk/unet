@@ -75,5 +75,7 @@ int iphdr_print(struct iphdr *iph, struct strbuf *sb)
 		return -errno;
 	sb->len += strlen(s);
 
+	sb->len += sprintf(sb_curr(sb), " sum: %#x ", ntohs(iph->check));
+
 	return 0;
 }
