@@ -10,6 +10,8 @@ static struct strbuf sb = {
 	.buf = fmt_buf,
 };
 
+void ip_input(struct netif *ifp, struct mbuf *m);
+
 void
 eth_input(struct netif *netif, struct mbuf *m)
 {
