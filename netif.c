@@ -98,7 +98,6 @@ netif_poll(struct netif *netif)
 		}
 		mb_put(m, err);
 		eth_input(netif, m);
-		mb_free(m);
 	}
 
 	return 0;

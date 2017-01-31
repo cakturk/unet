@@ -91,7 +91,6 @@ arp_print(struct arphdr *hdr)
 	char tip[sizeof(sip)];
 	char sha[sizeof("ff:ff:ff:ff:ff:ff")];
 	char tha[sizeof(sha)];
-	printf("sizeof: %zu\n", sizeof(struct arpentry));
 
 	printf("ARP packet (%zu) bytes\n"
 	       "ar_hrd: %hu\n"
@@ -162,6 +161,9 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 	default:
 		break;
 	}
+
+	/* XXX is here the right place to release? */
+	mb_free(m);
 }
 
 static void
@@ -170,7 +172,7 @@ arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip, hwaddr_t *ether)
 	struct mbuf *m;
 	struct arphdr *ap;
 
-	if ((m = mb_alloc()))
+	if ((m = mb_alloc()) == NULL)
 	    return;
 
 	mb_reserve(m, ETH_HLEN);

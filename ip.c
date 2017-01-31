@@ -22,8 +22,7 @@ ip_input(struct netif *ifp, struct mbuf *m)
 
 	if (ip_csum(iph, ip_hdrlen(iph), 0x0000) != 0) {
 		fprintf(stderr, "IP: bad checksum\n");
-		mb_free(m);
-		return;
+		goto drop;
 	}
 
 	sb_reset(&sb);
@@ -37,6 +36,11 @@ ip_input(struct netif *ifp, struct mbuf *m)
 		break;
 	case IPPROTO_TCP:
 		printf("TCP\n");
-		break;
+		/* FALLTHROUGH */
+	default:
+		goto drop;
 	}
+	return;
+drop:
+	mb_free(m);
 }

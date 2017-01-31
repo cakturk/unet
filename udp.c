@@ -29,7 +29,6 @@ udp_input(struct netif *ifp, struct mbuf *m)
 		fprintf(stderr, "UDP: bad checksum\n");
 		goto drop;
 	}
-
 	return;
 drop:
 	mb_free(m);

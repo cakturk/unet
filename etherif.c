@@ -29,6 +29,7 @@ eth_input(struct netif *netif, struct mbuf *m)
 		arp_recv(netif, m);
 		break;
 	default:
+		mb_free(m);
 		break;
 	}
 }
