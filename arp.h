@@ -50,5 +50,7 @@ struct mbuf;
 
 void arp_print(struct arphdr *hdr);
 void arp_recv(struct netif *ifp, struct mbuf *m);
+int arp_resolve(struct netif *ifp, ipv4_t dstaddr,
+		struct mbuf *m, hwaddr_t *dsthw);
 
 #endif /* end of include guard: ARP_H_ */

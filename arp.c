@@ -57,7 +57,7 @@ got_it:
 	return ae;
 }
 
-int arp_resolve(ipv4_t dstaddr, struct mbuf *m, hwaddr_t *dsthw)
+static int __arp_resolve(ipv4_t dstaddr, struct mbuf *m, hwaddr_t *dsthw)
 {
 	struct arpentry *ae;
 	struct mbuf **last;
@@ -80,6 +80,17 @@ int arp_resolve(ipv4_t dstaddr, struct mbuf *m, hwaddr_t *dsthw)
 		last = mb_lastpp(&ae->ae_wq_head);
 		*last = m;
 	}
+
+	return 0;
+}
+
+int arp_resolve(struct netif *ifp, ipv4_t dstaddr,
+		struct mbuf *m, hwaddr_t *dsthw)
+{
+	/* Cache hit */
+	if (__arp_resolve(dstaddr, m, dsthw))
+		return 1;
+	arp_request(ifp, &ifp->ipaddr, &dstaddr, &ifp->hwaddr);
 
 	return 0;
 }
@@ -135,29 +146,33 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
 	printf("Response\n");
 	arp_print(resp);
-	eth_output(rcvif, mbuf, ar_tha(resp));
+	eth_output(rcvif, mbuf, ar_tha(resp), ETH_P_ARP);
 }
 
 void
 arp_recv(struct netif *rcvif, struct mbuf *m)
 {
-	struct arphdr *hdr;
-	static unsigned count;
+	struct arphdr   *hdr;
+	struct arpentry *ent;
+	ipv4_t		 ip;
+	/* static unsigned count; */
 
 	hdr = arp_hdr(mb_htrim(m, sizeof(*hdr)));
 	switch (hdr->ar_op) {
 	case htons(ARPOP_REQUEST):
 		arp_print(hdr);
 		arp_reply(rcvif, hdr);
-		if (count++ < 2) {
-			ipv4_t sip = { .data = {172, 28, 128, 44} };
-			ipv4_t tip = { .data = {172, 28, 128, 4} };
+		/* if (count++ < 2) { */
+		/* 	ipv4_t sip = { .data = {172, 28, 128, 44} }; */
+		/* 	ipv4_t tip = { .data = {172, 28, 128, 4} }; */
 
-			arp_request(rcvif, &sip, &tip, &rcvif->hwaddr);
-		}
+		/* 	arp_request(rcvif, &sip, &tip, &rcvif->hwaddr); */
+		/* } */
 		break;
 	case htons(ARPOP_REPLY):
-		printf("arp reply received\n");
+		ip.addr = *(uint32_t *)ar_spa(hdr);
+		ent = arp_lookup(ip);
+		printf("arp reply received: %p\n", ent);
 	default:
 		break;
 	}
@@ -190,7 +205,7 @@ arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip, hwaddr_t *ether)
 	memcpy(ar_tpa(ap), tip, sizeof(*tip));
 	printf("Request\n");
 	arp_print(ap);
-	eth_output(ifp, m, broadcastmac);
+	eth_output(ifp, m, broadcastmac, ETH_P_ARP);
 }
 
 static inline void

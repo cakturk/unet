@@ -12,6 +12,7 @@
 #include "netif.h"
 #include "etherif.h"
 #include "mbuf.h"
+#include "udp.h"
 
 /*
  * Taken from Kernel Documentation/networking/tuntap.txt
@@ -84,6 +85,7 @@ netif_poll(struct netif *netif)
 	ssize_t err;
 
 	mb_pool_init();
+	udp_init();
 
 	for (;;) {
 		m = mb_alloc();

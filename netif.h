@@ -11,8 +11,8 @@ typedef struct {
 
 typedef struct {
 	union {
-		int32_t addr;
-		uint8_t data[sizeof(int32_t)];
+		uint32_t addr;
+		uint8_t  data[sizeof(uint32_t)];
 	};
 } ipv4_t;
 

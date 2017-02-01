@@ -35,14 +35,15 @@ eth_input(struct netif *netif, struct mbuf *m)
 }
 
 void
-eth_output(struct netif *ifp, struct mbuf *m, uint8_t *dst)
+eth_output(struct netif *ifp, struct mbuf *m,
+	   uint8_t *dst, uint16_t ethproto)
 {
 	struct machdr *eh;
 
 	eh = mb_push(m, sizeof(*eh));
 	memcpy(eh->dst, dst, ETH_ALEN);
 	memcpy(eh->src, &ifp->hwaddr, ETH_ALEN);
-	eh->type = htons(ETH_P_ARP);
+	eh->type = htons(ethproto);
 
 	netif_xmit(ifp, m);
 }

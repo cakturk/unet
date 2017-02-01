@@ -39,7 +39,7 @@ MU_TEST(test_arp_resolve)
 	hwaddr_t ether;
 	int err;
 
-	err = arp_resolve(addr, NULL, &ether);
+	err = __arp_resolve(addr, NULL, &ether);
 	mu_assert_int_eq(0, err);
 
 	ent = &arp_tab[0];
@@ -48,7 +48,7 @@ MU_TEST(test_arp_resolve)
 
 	mb_init(&m1);
 
-	err = arp_resolve(addr, &m1, &ether);
+	err = __arp_resolve(addr, &m1, &ether);
 	mu_assert_int_eq(0, err);
 	mu_check(ent->ae_wq_head == &m1);
 	mu_check(ent->ae_wq_head->m_next == NULL);
@@ -57,7 +57,7 @@ MU_TEST(test_arp_resolve)
 	m1.m_next = &m2;
 
 	mb_init(&m3);
-	err = arp_resolve(addr, &m3, &ether);
+	err = __arp_resolve(addr, &m3, &ether);
 	mu_assert_int_eq(0, err);
 	mu_check(ent->ae_wq_head == &m1);
 	mu_check(ent->ae_wq_head->m_next == &m2);
