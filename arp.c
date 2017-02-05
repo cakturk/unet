@@ -65,7 +65,7 @@ static int __arp_resolve(ipv4_t dstaddr, struct mbuf *m, hwaddr_t *dsthw)
 	if ((ae = arp_lookup(dstaddr))) {
 		switch (ae->ae_st) {
 		case ARP_E_COMPLETE:
-			memcpy(&dsthw, &ae->ae_ha, HWADDR_LEN);
+			memcpy(dsthw, &ae->ae_ha, HWADDR_LEN);
 			return 1;
 		case ARP_E_INCOMPLETE:
 			break;
@@ -155,25 +155,27 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 	struct arphdr   *hdr;
 	struct arpentry *ent;
 	ipv4_t		 ip;
-	/* static unsigned count; */
 
 	hdr = arp_hdr(mb_htrim(m, sizeof(*hdr)));
 	switch (hdr->ar_op) {
 	case htons(ARPOP_REQUEST):
 		arp_print(hdr);
 		arp_reply(rcvif, hdr);
-		/* if (count++ < 2) { */
-		/* 	ipv4_t sip = { .data = {172, 28, 128, 44} }; */
-		/* 	ipv4_t tip = { .data = {172, 28, 128, 4} }; */
-
-		/* 	arp_request(rcvif, &sip, &tip, &rcvif->hwaddr); */
-		/* } */
 		break;
+
 	case htons(ARPOP_REPLY):
 		ip.addr = *(uint32_t *)ar_spa(hdr);
 		ent = arp_lookup(ip);
-		printf("arp reply received: %p\n", ent);
-	default:
+		if (!ent)
+			break;
+
+		memcpy(&ent->ae_ha, ar_sha(hdr), HWADDR_LEN);
+		if (ent->ae_wq_head) {
+			eth_output(rcvif, ent->ae_wq_head, ent->ae_ha.data,
+				   ETH_P_IP);
+			ent->ae_wq_head = NULL;
+		}
+		ent->ae_st = ARP_E_COMPLETE;
 		break;
 	}
 
