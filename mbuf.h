@@ -60,7 +60,7 @@ static inline void mb_init(struct mbuf *m)
 	m->m_tail = m->m_data;
 }
 
-static inline void *mb_head(struct mbuf *m)
+static inline void *mb_head(const struct mbuf *m)
 {
 	return m->m_head;
 }
@@ -79,7 +79,7 @@ static inline struct mbuf **mb_lastpp(struct mbuf **m)
 	return m;
 }
 
-static inline unsigned int mb_datalen(struct mbuf *m)
+static inline unsigned int mb_datalen(const struct mbuf *m)
 {
 	return m->m_tail - m->m_head;
 }
