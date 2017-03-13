@@ -159,6 +159,54 @@ MU_TEST(test_mb_pool_chain_alloc)
 		assert_free(&info, i);
 }
 
+MU_TEST(test_mb_alloc_mtu)
+{
+	struct mbuf *m;
+	size_t total_len = 0;
+
+	m = mb_alloc_mtu();
+	mu_check(m != NULL);
+
+	for (; m; m = m->m_next)
+		total_len += MLEN;
+
+	mu_check(total_len >= (MTU_SIZE + MB_IP_ALIGN));
+}
+
+MU_TEST(test_mb_pool_alloc_vectored)
+{
+	struct mbuf_iovec miov;
+	struct mbuf *m;
+	size_t total_len = 0;
+	int err;
+
+	err = mb_pool_alloc_vectored(&miov);
+	mu_assert_int_eq(7, err);
+
+	for (m = miov.list_head; m; m = m->m_next)
+		total_len += mb_datalen(m);
+	mu_assert_int_eq(7, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(MLEN*7 - MB_IP_ALIGN, total_len);
+
+	err = mb_pool_alloc_vectored(&miov);
+	mu_assert_int_eq(7, err);
+
+	total_len = 0;
+	for (m = miov.list_head; m; m = m->m_next)
+		total_len += mb_datalen(m);
+	mu_assert_int_eq(7, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(MLEN*7 - MB_IP_ALIGN, total_len);
+
+	err = mb_pool_alloc_vectored(&miov);
+	mu_assert_int_eq(2, err);
+
+	total_len = 0;
+	for (m = miov.list_head; m; m = m->m_next)
+		total_len += mb_datalen(m);
+	mu_assert_int_eq(2, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(MLEN*2 - MB_IP_ALIGN, total_len);
+}
+
 MU_TEST_SUITE(test_suite)
 {
 	MU_SUITE_CONFIGURE(test_setup, NULL);
@@ -166,6 +214,8 @@ MU_TEST_SUITE(test_suite)
 	MU_RUN_TEST(test_mb_pool_alloc);
 	MU_RUN_TEST(test_mb_pool_chain_alloc_with_a_size_of_zero);
 	MU_RUN_TEST(test_mb_pool_chain_alloc);
+	MU_RUN_TEST(test_mb_alloc_mtu);
+	MU_RUN_TEST(test_mb_pool_alloc_vectored);
 }
 
 int

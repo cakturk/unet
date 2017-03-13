@@ -1,7 +1,19 @@
 #ifndef MBUF_H_
 #define MBUF_H_
 
+#ifndef MBUF_POOL_LEN
+#define MBUF_POOL_LEN 16
+#endif
+
+#include <sys/uio.h>
+#include <stddef.h>
 #include <stdint.h>
+#if !(MBUF_POOL_LEN)
+#include <stdlib.h>
+#endif
+
+#define MTU_SIZE 1500
+#define _howmany(x, y)  (((x) + ((y) - 1)) / (y))
 
 #ifndef MSIZE
 #define MSIZE 256
@@ -49,9 +61,63 @@ struct mbuf {
  *           +--+-------------+---> &m_data[MLEN]
  */
 
-struct mbuf *mb_alloc(void);
-void mb_free(struct mbuf *m);
+struct mbuf_iovec {
+	struct mbuf *list_head;
+	struct mbuf *list_tail;
+	struct iovec iov[_howmany(MTU_SIZE, MLEN)];
+};
+
+struct mbuf *mb_pool_alloc(void);
+void mb_pool_free(struct mbuf *m);
+
+struct mbuf *mb_pool_chain_alloc(unsigned int nrbufs);
+void mb_pool_chain_free(struct mbuf *m);
+
+static inline void mb_init(struct mbuf *m);
+
+static inline struct mbuf *mb_alloc(void)
+{
+	struct mbuf *m;
+#if MBUF_POOL_LEN
+	m = mb_pool_alloc();
+#else
+	m = malloc(sizeof(struct mbuf));
+	mb_init(m);
+#endif
+	return m;
+}
+
+static inline void mb_free(struct mbuf *m)
+{
+#if MBUF_POOL_LEN
+	mb_pool_free(m);
+#else
+	free(m);
+#endif
+}
+
 void mb_pool_init(void);
+
+/*
+ * Allocate @num_mbuffs number of mbufs. Returns a pointer to
+ * the head of the mbuf chain.
+ */
+static inline struct mbuf *mb_alloc_chain(unsigned int num_mbuffs)
+{
+	return mb_pool_chain_alloc(num_mbuffs);
+}
+
+#define mb_alloc_mtu() mb_alloc_chain(_howmany(MTU_SIZE, MLEN))
+
+int mb_pool_alloc_vectored(struct mbuf_iovec *miov);
+
+/*
+ * Free an entire mbuf chain pointed to by @m
+ */
+static inline void mb_chain_free(struct mbuf *m)
+{
+	mb_pool_chain_free(m);
+}
 
 static inline void mb_init(struct mbuf *m)
 {

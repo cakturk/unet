@@ -3,6 +3,7 @@
 #include <fcntl.h>        /* open() syscall */
 #include <arpa/inet.h>    /* inet_pton */
 #include <sys/ioctl.h>    /* ioctl SIOCGIFHWADDR */
+#include <sys/uio.h>      /* scatter/gather IO */
 #include <net/if.h>       /* struct ifreq */
 #include <string.h>       /* memcpy and so on */
 #include <stdio.h>

@@ -1,37 +1,14 @@
-#include <stdlib.h>
+#include <sys/uio.h>
 #include "mbuf.h"
 
-#ifndef MBUF_POOL_LEN
-#define MBUF_POOL_LEN 16
-#endif
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static struct mbuf mpool[MBUF_POOL_LEN];
 static struct mbuf *free_list;
 
-void mbuf_link(struct mbuf **head, struct mbuf *first, struct mbuf *last);
-static inline struct mbuf *mb_pool_alloc(void);
-static inline void mb_pool_free(struct mbuf *m);
-
-struct mbuf *mb_alloc(void)
-{
-	struct mbuf *m;
-#if MBUF_POOL_LEN
-	m = mb_pool_alloc();
-#else
-	m = malloc(sizeof(struct mbuf));
-	mb_init(m);
-#endif
-	return m;
-}
-
-void mb_free(struct mbuf *m)
-{
-#if MBUF_POOL_LEN
-	mb_pool_free(m);
-#else
-	free(m);
-#endif
-}
+static inline void mbuf_link(struct mbuf **head, struct mbuf *first,
+			     struct mbuf *last);
+static inline struct mbuf *mbuf_unlink(struct mbuf **first, struct mbuf **last);
 
 void mb_pool_init(void)
 {
@@ -43,7 +20,7 @@ void mb_pool_init(void)
 	mpool[MBUF_POOL_LEN - 1].m_next = NULL;
 }
 
-static inline struct mbuf *mb_pool_alloc(void)
+struct mbuf *mb_pool_alloc(void)
 {
 	struct mbuf *m = NULL;
 
@@ -79,27 +56,66 @@ struct mbuf *mb_pool_chain_alloc(unsigned int nrbufs)
 	return m;
 }
 
+static inline void
+mbuf_map_iov(struct iovec *iov, const struct mbuf *m)
+{
+	iov->iov_base = m->m_head;
+	iov->iov_len = mb_datalen(m);
+}
+
+static inline void
+mbuf_set_data_ptrs(struct mbuf *m, size_t headoffset, size_t tailoffset)
+{
+	m->m_head = &m->m_data[headoffset];
+	m->m_tail = &m->m_data[tailoffset];
+}
+
+int mb_pool_alloc_vectored(struct mbuf_iovec *miov)
+{
+	struct mbuf *m = free_list;
+	unsigned int n = 0;
+
+	if (!m)
+		return -1;
+
+	mbuf_map_iov(&miov->iov[n], m);
+	mbuf_set_data_ptrs(m, MB_IP_ALIGN, MLEN);
+	n++;
+
+	for (; n < ARRAY_SIZE(miov->iov) && m->m_next; n++) {
+		m = m->m_next;
+		mbuf_map_iov(&miov->iov[n], m);
+		mbuf_set_data_ptrs(m, 0, MLEN);
+	}
+	miov->list_head = mbuf_unlink(&free_list, &m->m_next);
+	miov->list_tail = m;
+
+	return n;
+}
+
 void mb_pool_chain_free(struct mbuf *m)
 {
 	mbuf_link(&free_list, m, mb_last(m));
 }
 
-static inline void mb_pool_free(struct mbuf *m)
+void mb_pool_free(struct mbuf *m)
 {
 	m->m_next = free_list;
 	free_list = m;
 }
 
-void mbuf_link(struct mbuf **head, struct mbuf *first, struct mbuf *last)
+static inline void
+mbuf_link(struct mbuf **head, struct mbuf *first, struct mbuf *last)
 {
 	last->m_next = *head;
 	*head = first;
 }
 
-struct mbuf *mbuf_unlink(struct mbuf **first, struct mbuf **last)
+static inline struct mbuf *
+mbuf_unlink(struct mbuf **first, struct mbuf **last)
 {
 	struct mbuf *m = *first;
-	*first = (*last)->m_next;
+	*first = *last;
 	*last = NULL;
 	return m;
 }
