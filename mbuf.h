@@ -15,6 +15,8 @@
 #define MTU_SIZE 1500
 #define _howmany(x, y)  (((x) + ((y) - 1)) / (y))
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 #ifndef MSIZE
 #define MSIZE 256
 #endif
@@ -62,8 +64,7 @@ struct mbuf {
  */
 
 struct mbuf_iovec {
-	struct mbuf *list_head;
-	struct mbuf *list_tail;
+	struct mbuf *buffs[_howmany(MTU_SIZE, MLEN)];
 	struct iovec iov[_howmany(MTU_SIZE, MLEN)];
 };
 
@@ -109,7 +110,8 @@ static inline struct mbuf *mb_alloc_chain(unsigned int num_mbuffs)
 
 #define mb_alloc_mtu() mb_alloc_chain(_howmany(MTU_SIZE, MLEN))
 
-int mb_pool_alloc_vectored(struct mbuf_iovec *miov);
+int mb_pool_sg_alloc(struct mbuf_iovec *miov);
+void mb_pool_sg_free_excess(struct mbuf_iovec *mi, unsigned int bytes_in_use);
 
 /*
  * Free an entire mbuf chain pointed to by @m

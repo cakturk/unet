@@ -173,38 +173,52 @@ MU_TEST(test_mb_alloc_mtu)
 	mu_check(total_len >= (MTU_SIZE + MB_IP_ALIGN));
 }
 
-MU_TEST(test_mb_pool_alloc_vectored)
+MU_TEST(test_mb_pool_sg_alloc)
 {
 	struct mbuf_iovec miov;
 	struct mbuf *m;
 	size_t total_len = 0;
 	int err;
 
-	err = mb_pool_alloc_vectored(&miov);
+	err = mb_pool_sg_alloc(&miov);
 	mu_assert_int_eq(7, err);
 
-	for (m = miov.list_head; m; m = m->m_next)
+	for (m = miov.buffs[0]; m; m = m->m_next)
 		total_len += mb_datalen(m);
-	mu_assert_int_eq(7, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(7, chain_nr_elems(miov.buffs[0]));
 	mu_assert_int_eq(MLEN*7 - MB_IP_ALIGN, total_len);
 
-	err = mb_pool_alloc_vectored(&miov);
+	err = mb_pool_sg_alloc(&miov);
 	mu_assert_int_eq(7, err);
 
 	total_len = 0;
-	for (m = miov.list_head; m; m = m->m_next)
+	for (m = miov.buffs[0]; m; m = m->m_next)
 		total_len += mb_datalen(m);
-	mu_assert_int_eq(7, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(7, chain_nr_elems(miov.buffs[0]));
 	mu_assert_int_eq(MLEN*7 - MB_IP_ALIGN, total_len);
 
-	err = mb_pool_alloc_vectored(&miov);
+	err = mb_pool_sg_alloc(&miov);
 	mu_assert_int_eq(2, err);
 
 	total_len = 0;
-	for (m = miov.list_head; m; m = m->m_next)
+	for (m = miov.buffs[0]; m; m = m->m_next)
 		total_len += mb_datalen(m);
-	mu_assert_int_eq(2, chain_nr_elems(miov.list_head));
+	mu_assert_int_eq(2, chain_nr_elems(miov.buffs[0]));
 	mu_assert_int_eq(MLEN*2 - MB_IP_ALIGN, total_len);
+}
+
+MU_TEST(test_mb_pool_sg_free_excess)
+{
+	struct mbuf_iovec mi;
+	int rc;
+
+	rc = mb_pool_sg_alloc(&mi);
+	mu_assert_int_eq(7, rc);
+	mu_assert_int_eq(7, chain_nr_elems(mi.buffs[0]));
+
+	mb_pool_sg_free_excess(&mi, 463);
+	mu_assert_int_eq(3, chain_nr_elems(mi.buffs[0]));
+	mu_assert_int_eq(MBUF_POOL_LEN - 3, chain_nr_elems(free_list));
 }
 
 MU_TEST_SUITE(test_suite)
@@ -215,7 +229,8 @@ MU_TEST_SUITE(test_suite)
 	MU_RUN_TEST(test_mb_pool_chain_alloc_with_a_size_of_zero);
 	MU_RUN_TEST(test_mb_pool_chain_alloc);
 	MU_RUN_TEST(test_mb_alloc_mtu);
-	MU_RUN_TEST(test_mb_pool_alloc_vectored);
+	MU_RUN_TEST(test_mb_pool_sg_alloc);
+	MU_RUN_TEST(test_mb_pool_sg_free_excess);
 }
 
 int

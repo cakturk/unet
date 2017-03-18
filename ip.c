@@ -44,7 +44,7 @@ ip_input(struct netif *ifp, struct mbuf *m)
 	}
 	return;
 drop:
-	mb_free(m);
+	mb_chain_free(m);
 }
 
 void

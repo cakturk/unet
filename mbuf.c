@@ -1,7 +1,6 @@
 #include <sys/uio.h>
+#include <assert.h>
 #include "mbuf.h"
-
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static struct mbuf mpool[MBUF_POOL_LEN];
 static struct mbuf *free_list;
@@ -70,7 +69,13 @@ mbuf_set_data_ptrs(struct mbuf *m, size_t headoffset, size_t tailoffset)
 	m->m_tail = &m->m_data[tailoffset];
 }
 
-int mb_pool_alloc_vectored(struct mbuf_iovec *miov)
+static inline void
+mbuf_set_datalen(struct mbuf *m, unsigned int len)
+{
+	m->m_tail = m->m_head + len;
+}
+
+int mb_pool_sg_alloc(struct mbuf_iovec *miov)
 {
 	struct mbuf *m = free_list;
 	unsigned int n = 0;
@@ -78,19 +83,48 @@ int mb_pool_alloc_vectored(struct mbuf_iovec *miov)
 	if (!m)
 		return -1;
 
-	mbuf_map_iov(&miov->iov[n], m);
 	mbuf_set_data_ptrs(m, MB_IP_ALIGN, MLEN);
-	n++;
+	mbuf_map_iov(&miov->iov[n], m);
+	miov->buffs[n++] = m;
 
 	for (; n < ARRAY_SIZE(miov->iov) && m->m_next; n++) {
 		m = m->m_next;
-		mbuf_map_iov(&miov->iov[n], m);
 		mbuf_set_data_ptrs(m, 0, MLEN);
+		mbuf_map_iov(&miov->iov[n], m);
+		miov->buffs[n] = m;
 	}
-	miov->list_head = mbuf_unlink(&free_list, &m->m_next);
-	miov->list_tail = m;
+	mbuf_unlink(&free_list, &m->m_next);
 
 	return n;
+}
+
+/**
+ * Frees @len bytes worth of mbufs from the end of an mbuf chain
+ * pointed to by @m
+ */
+void mb_pool_sg_free_excess(struct mbuf_iovec *mi, unsigned int bytes_in_use)
+{
+	struct mbuf *m;
+
+	assert(bytes_in_use <= MTU_SIZE);
+	m = mi->buffs[0];
+	if (bytes_in_use > (MLEN - MB_IP_ALIGN)) {
+		unsigned int nth;
+
+		/* proceed to the next mbuf */
+		m++;
+		bytes_in_use -= MLEN - MB_IP_ALIGN;
+
+		nth = bytes_in_use / MLEN;
+		bytes_in_use -= nth * MLEN;
+		m += nth;
+	}
+
+	mbuf_set_datalen(m, bytes_in_use);
+	if (m->m_next) {
+		mb_pool_chain_free(m->m_next);
+		m->m_next = NULL;
+	}
 }
 
 void mb_pool_chain_free(struct mbuf *m)

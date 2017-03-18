@@ -180,7 +180,7 @@ arp_recv(struct netif *rcvif, struct mbuf *m)
 	}
 
 	/* XXX is here the right place to release? */
-	mb_free(m);
+	mb_chain_free(m);
 }
 
 static void

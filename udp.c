@@ -54,7 +54,7 @@ udp_input(struct netif *ifp, struct mbuf *m)
 	}
 	return;
 drop:
-	mb_free(m);
+	mb_pool_chain_free(m);
 }
 
 void
@@ -68,7 +68,7 @@ udp_output(struct netif *ifp)
 	struct mbuf	*m;
 	struct udphdr	*uh;
 	ipv4_t saddr = { .data = {172, 28, 128, 44} };
-	ipv4_t daddr = { .data = {172, 28, 128, 5} };
+	ipv4_t daddr = { .data = {172, 28, 128, 78} };
 	const char msg[] = "Beam me up, Scotty!\n";
 
 	if ((m = mb_alloc()) == NULL)
