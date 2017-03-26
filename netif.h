@@ -9,11 +9,9 @@ typedef struct {
 	uint8_t data[HWADDR_LEN];
 } hwaddr_t;
 
-typedef struct {
-	union {
-		uint32_t addr;
-		uint8_t  data[sizeof(uint32_t)];
-	};
+typedef union {
+	uint32_t addr;
+	uint8_t  data[sizeof(uint32_t)];
 } ipv4_t;
 
 struct netif {
