@@ -20,8 +20,7 @@ udp_init(void)
 }
 
 static unsigned count;
-void
-udp_output(struct netif *ifp);
+static void udp_test_output(struct netif *ifp);
 
 void
 udp_input(struct netif *ifp, struct mbuf *m)
@@ -50,7 +49,7 @@ udp_input(struct netif *ifp, struct mbuf *m)
 	printf("receiving UDP\n");
 	if (count++ > 3) {
 		printf("sending UDP\n");
-		udp_output(ifp);
+		udp_test_output(ifp);
 	}
 	return;
 drop:
@@ -63,13 +62,13 @@ ip_output(struct netif *ifp, struct mbuf *m,
 	  uint32_t saddr, uint32_t daddr);
 
 void
-udp_output(struct netif *ifp)
+udp_output(struct netif *ifp,
+	   ipv4_t saddr, uint16_t sport,
+	   ipv4_t daddr, uint16_t dport,
+	   const char *buf, size_t len)
 {
 	struct mbuf	*m;
 	struct udphdr	*uh;
-	ipv4_t saddr = { .data = {172, 28, 128, 44} };
-	ipv4_t daddr = { .data = {172, 28, 128, 78} };
-	const char msg[] = "Beam me up, Scotty!\n";
 
 	if ((m = mb_alloc()) == NULL)
 		return;
@@ -79,15 +78,25 @@ udp_output(struct netif *ifp)
 	/* UDP header */
 	uh = mb_put(m, sizeof(*uh));
 	/* UDP payload */
-	strcpy(mb_put(m, sizeof(msg)-1), msg);
+	strcpy(mb_put(m, len), buf);
 
-	uh->sport = htons(12345);
-	uh->dport = htons(33333);
-	uh->len = htons(sizeof(*uh) + sizeof(msg)-1);
+	uh->sport = htons(sport);
+	uh->dport = htons(dport);
+	uh->len = htons(sizeof(*uh) + len);
 	uh->csum = 0;
 
 	if ((uh->csum = ip_udp_csum_mb(saddr.addr, daddr.addr, m)) == 0)
 		uh->csum = ~0;
 
 	ip_output(ifp, m, udp_id++, IPPROTO_UDP, saddr.addr, daddr.addr);
+}
+
+static void
+udp_test_output(struct netif *ifp)
+{
+	ipv4_t saddr = { .data = {172, 28, 128, 44} };
+	ipv4_t daddr = { .data = {172, 28, 128, 5} };
+	const char msg[] = "Beam me up, Scotty!\n";
+
+	udp_output(ifp, saddr, 12345, daddr, 33333, msg, sizeof(msg)-1);
 }
