@@ -22,6 +22,8 @@
 
 static struct netif netif;
 
+int shell_init(const char *prompt);
+
 #define MACADDR ((hwaddr_t *)"\x56\x85\x6f\x7f\xa0\xc1")
 
 int main(int argc, char *argv[])
@@ -46,7 +48,8 @@ int main(int argc, char *argv[])
 	       iface_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
 	       ip->data[0], ip->data[1], ip->data[2], ip->data[3]);
 
-	netif_poll(&netif);
+	/* netif_poll(&netif); */
+	shell_init("unet-shell-> ");
 
 	exit(EXIT_SUCCESS);
 }

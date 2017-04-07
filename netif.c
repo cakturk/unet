@@ -15,6 +15,19 @@
 #include "mbuf.h"
 #include "udp.h"
 
+static struct netif *default_iface;
+
+static void
+netif_set_default_iface(struct netif *ifp)
+{
+	default_iface = ifp;
+}
+
+struct netif *netif_default_iface(void)
+{
+	return default_iface;
+}
+
 /*
  * Taken from Kernel Documentation/networking/tuntap.txt
  */
@@ -76,6 +89,7 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr,
 	if (!inet_pton(AF_INET, ipaddr, &netif->ipaddr))
 		return -1;
 	memcpy(&netif->hwaddr, ether, ETH_ALEN);
+	netif_set_default_iface(netif);
 	return 0;
 }
 
