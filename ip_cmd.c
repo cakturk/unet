@@ -1,8 +1,15 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <arpa/inet.h>
 
 #include "netif.h"
+
+#define BITS_PER_INT 32
+#define GENMASKINT(h, l) \
+	(((~0U) << (l)) & (~0U >> (BITS_PER_INT - 1 - (h))))
+#define GEN_NETMASK(nr) \
+	nr == 0 ? nr : GENMASKINT(31, 32 - nr)
 
 static void show_ip(FILE *fp, const struct netif *ifp)
 {
@@ -16,14 +23,34 @@ static void show_ip(FILE *fp, const struct netif *ifp)
 
 static void set_iface_address(struct netif *ifp, const char *addr)
 {
-	if (inet_pton(AF_INET, addr, &ifp->ipaddr) != 1)
-		fprintf(stderr, "Bad IP address format: %s\n", addr);
+
+	union {
+		uint8_t  d[sizeof(uint32_t)];
+		uint32_t ip;
+	} u;
+	uint32_t mask_bitnr;
+	int rc;
+	char c;
+
+	rc = sscanf(addr, "%hhu.%hhu.%hhu.%hhu/%u%c",
+		    &u.d[0], &u.d[1], &u.d[2], &u.d[3],
+		    &mask_bitnr, &c);
+	if (rc != 5) {
+		fprintf(stderr, "Bad IP/netmask format: %s\n", addr);
+		return;
+	}
+	if (mask_bitnr > 32) {
+		fprintf(stderr, "netmask must be in the range of 0-32\n");
+		return;
+	}
+	ifp->mask.addr = htonl(GEN_NETMASK(mask_bitnr));
+	ifp->ipaddr.addr = u.ip;
 }
 
 static void usage(void)
 {
 	fprintf(stderr,
-		"set XXX.XXX.XXX.XXX - where XXX is between 0 - 255\n"
+		"set [address]/[netmask] - set IP address and netmask\n"
 		"get  - display IP address\n"
 		"help - display this message\n");
 }
