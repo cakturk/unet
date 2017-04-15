@@ -114,21 +114,3 @@ int shell_init(const char *prompt)
 
 	return 0;
 }
-
-/* int main(int argc, char *argv[]) */
-/* { */
-/* 	/1* printf("optind initial value: %d\n", optind); *1/ */
-/* 	if (argc > 1) { */
-/* 		const char *cmd = argv[1]; */
-
-/* 		printf("subcommand is %s\n", cmd); */
-
-/* 		optind = 2; */
-/* 		subcmd(argc, argv); */
-/* 		optind = 2; */
-/* 		subcmd2(argc, argv); */
-/* 	} */
-/* 	shell_init("unet-shell-> "); */
-
-/* 	return 0; */
-/* } */
