@@ -2,7 +2,7 @@ CFLAGS = -g3 -O2 -Wall -pipe
 OBJECTS = program_options.o eth_print.o ip_print.o \
 	  netif.o etherif.o arp.o udp_print.o tcp_print.o \
 	  mbuf.o ip.o udp.o checksum.o ip_cmd.o hwaddr_cmd.o \
-	  route_cmd.o shell.o main.o
+	  route_cmd.o nc_cmd.o shell.o main.o
 PROGRAM = unet
 LDLIBS =
 

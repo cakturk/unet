@@ -1,54 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <getopt.h>
-
-static void subcmd(int argc, char *const argv[])
-{
-	int bflag, ch;
-	int daggerset = 0, sword = 0;
-
-	/* Reinitialize 'getopt'. Note that to re-initialize getopt on BSDs
-	 * the variable 'optreset' must also be set to 1.
-	 */
-	optind = 1;
-
-	/* options descriptor */
-	const struct option longopts[] = {
-		{ "buffy",      no_argument,            NULL,           'b' },
-		{ "fluoride",   required_argument,      NULL,           'f' },
-		{ "daggerset",  no_argument,            &daggerset,     1 },
-		{ "sword",      no_argument,            &sword,         1 },
-		{ /* Terminating entry */ }
-	};
-
-	bflag = 0;
-	opterr = 0;
-	while ((ch = getopt_long(argc, argv, "bf:", longopts, NULL)) != -1) {
-		switch (ch) {
-		case 'b':
-			bflag = 1;
-			printf("bflag is set: %d!\n", bflag);
-			break;
-		case 'f':
-			printf("option f: %s\n", optarg);
-			break;
-		case 0:
-			if (daggerset) {
-				fprintf(stderr,"Buffy will use her dagger to "
-					"apply fluoride to dracula's teeth\n");
-			}
-			if (sword) {
-				fprintf(stderr,"Buffy will use magic sword\n");
-			}
-			break;
-		default:
-			printf("usage invoked\n");
-		}
-	}
-	argc -= optind;
-	argv += optind;
-}
 
 struct shell_cmd {
 	const char *cmd_name;
@@ -56,16 +8,12 @@ struct shell_cmd {
 	void (*cmd_fn)(int argc, char *const argv[]);
 };
 
-void ip_cmd_main(int argc, char *const argv[]);
-void hwaddr_main(int argc, char *const *argv);
-void route_main(int argc, char *const argv[]);
+extern void ip_cmd_main(int argc, char *const argv[]);
+extern void hwaddr_main(int argc, char *const argv[]);
+extern void route_main(int argc, char *const argv[]);
+extern void nc_main(int argc, char *const argv[]);
 
 static const struct shell_cmd cmd_list[] = {
-	{
-		.cmd_name = "foo",
-		.cmd_help = "Does nothing just foo!",
-		.cmd_fn   = subcmd
-	},
 	{
 		.cmd_name = "ip",
 		.cmd_help = "set/get interface IP address",
@@ -80,6 +28,11 @@ static const struct shell_cmd cmd_list[] = {
 		.cmd_name = "route",
 		.cmd_help = "show/manipulate the routing tables",
 		.cmd_fn   = route_main
+	},
+	{
+		.cmd_name = "nc",
+		.cmd_help = "arbitrary TCP and UDP connections and listens",
+		.cmd_fn   = nc_main
 	},
 	{ /* Terminating entry */ }
 };
