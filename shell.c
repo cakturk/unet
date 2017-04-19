@@ -1,17 +1,18 @@
-#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "shell.h"
 
 struct shell_cmd {
 	const char *cmd_name;
 	const char *cmd_help;
-	void (*cmd_fn)(int argc, char *const argv[]);
+	void (*cmd_fn)(struct shell_struct *s, int argc, char *const argv[]);
 };
 
-extern void ip_cmd_main(int argc, char *const argv[]);
-extern void hwaddr_main(int argc, char *const argv[]);
-extern void route_main(int argc, char *const argv[]);
-extern void nc_main(int argc, char *const argv[]);
+extern void ip_cmd_main(struct shell_struct *s, int argc, char *const argv[]);
+extern void hwaddr_main(struct shell_struct *s, int argc, char *const argv[]);
+extern void route_main(struct shell_struct *s, int argc, char *const argv[]);
+extern void nc_main(struct shell_struct *s, int argc, char *const argv[]);
 
 static const struct shell_cmd cmd_list[] = {
 	{
@@ -57,7 +58,7 @@ static void shell_run_cmd(int argc, char *const argv[])
 
 	for (cmd = &cmd_list[0]; cmd->cmd_name; cmd++) {
 		if (!strcmp(argv0, cmd->cmd_name))
-			return cmd->cmd_fn(argc, argv);
+			return cmd->cmd_fn(NULL, argc, argv);
 	}
 
 	fprintf(stderr, "Command \"%s\" is unknown, try \"help\".\n", argv0);
@@ -73,44 +74,62 @@ arg_print(int argc, const char *argv[])
 		printf("%s\n", argv[i]);
 }
 
+static void shell_display_prompt(const struct shell_struct *sh)
+{
+	fprintf(stdout, "%s", sh->prompt);
+	fflush(stdout);
+}
+
 #define ARGV_SIZE 8
 #define ARGV_MAX (ARGV_SIZE - 1)
 
-int shell_init(const char *prompt)
+static int shell_process_input(struct shell_struct *ss)
 {
 	char *argv[ARGV_SIZE], buf[1024], *cp;
 	int argc;
 
-	for (;;) {
-		fprintf(stdout, "%s", prompt);
-		if (!fgets(buf, sizeof(buf), stdin))
-			break;
+	/* fprintf(stdout, "%s", ss->prompt); */
+	if (!fgets(buf, sizeof(buf), ss->fp)) {
+		fprintf(stdout, "\n");
+		return 0;
+	}
 
-		argc = 0;
-		cp = buf;
+	argc = 0;
+	cp = buf;
 
-		/* Skip over any whitespace at start of string */
-		while (isspace(*cp))
+	/* Skip over any whitespace at start of string */
+	while (isspace(*cp))
+		cp++;
+
+	while (*cp && argc < ARGV_MAX) {
+		argv[argc++] = cp++;
+
+		/* Skip over alpha-numeric chars to get next arg */
+		while (isalnum(*cp) || ispunct(*cp))
 			cp++;
 
-		while (*cp && argc < ARGV_MAX) {
-			argv[argc++] = cp++;
+		*cp++ = '\0';
 
-			/* Skip over alpha-numeric chars to get next arg */
-			while (isalnum(*cp) || ispunct(*cp))
-				cp++;
-
-			*cp++ = '\0';
-
-			while (isspace(*cp))
-				cp++;
-		}
-
-		argv[argc] = NULL;
-		if (argc)
-			shell_run_cmd(argc, argv);
+		while (isspace(*cp))
+			cp++;
 	}
-	fprintf(stdout, "\n");
 
-	return 0;
+	argv[argc] = NULL;
+	if (argc)
+		shell_run_cmd(argc, argv);
+	shell_display_prompt(ss);
+
+	return 1;
+}
+
+struct shell_struct *shell_init(FILE *fp, const char *prompt)
+{
+	static struct shell_struct sh;
+
+	sh.fp = stdin;
+	sh.process_input = shell_process_input;
+	sh.prompt = prompt;
+	shell_display_prompt(&sh);
+
+	return &sh;
 }

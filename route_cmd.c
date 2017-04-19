@@ -4,6 +4,8 @@
 
 #include "netif.h"
 
+struct shell_struct;
+
 static void display_route(FILE *fp, const struct netif *ifp)
 {
 	char addr[INET_ADDRSTRLEN];
@@ -27,7 +29,7 @@ static void usage(void)
 		"help  - display this message\n");
 }
 
-void route_main(int argc, char *const argv[])
+void route_main(struct shell_struct *s, int argc, char *const argv[])
 {
 	const char *argv1 = argv[1];
 	struct netif *ifp;

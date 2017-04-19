@@ -4,6 +4,8 @@
 
 #include "netif.h"
 
+struct shell_struct;
+
 static void display_hwaddr(FILE *fp, const struct netif *ifp)
 {
 	const uint8_t *addr = ifp->hwaddr.data;
@@ -31,7 +33,7 @@ static void usage(void)
 		"help - display this message\n");
 }
 
-void hwaddr_main(int argc, char *const *argv)
+void hwaddr_main(struct shell_struct *s, int argc, char *const *argv)
 {
 	const char *argv1 = argv[1];
 	struct netif *ifp;

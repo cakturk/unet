@@ -5,6 +5,8 @@
 
 #include "netif.h"
 
+struct shell_struct;
+
 #define BITS_PER_INT 32
 #define GENMASKINT(h, l) \
 	(((~0U) << (l)) & (~0U >> (BITS_PER_INT - 1 - (h))))
@@ -55,7 +57,7 @@ static void usage(void)
 		"help - display this message\n");
 }
 
-void ip_cmd_main(int argc, char *const argv[])
+void ip_cmd_main(struct shell_struct *s, int argc, char *const argv[])
 {
 	const char *argv1 = argv[1];
 	struct netif *ifp;

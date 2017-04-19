@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -6,6 +5,8 @@
 #include <errno.h>
 #include <getopt.h>
 #include <arpa/inet.h>
+
+#include "shell.h"
 
 enum {
 	PROTO_UDP = 0,
@@ -61,7 +62,7 @@ parse_inet_addr(const char *s, uint32_t *addr)
 	return true;
 }
 
-void nc_main(int argc, char *const argv[])
+void nc_main(struct shell_struct *s, int argc, char *const argv[])
 {
 	int proto, lflag, ch;
 	uint16_t port = 0;
