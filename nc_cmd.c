@@ -55,7 +55,7 @@ parse_inet_addr(const char *s, uint32_t *addr)
 
 	ok = inet_pton(AF_INET, s, addr);
 	if (!ok) {
-		printf("Bad IP format: %s\n", s);
+		fprintf(stderr, "Bad IP format: %s\n", s);
 		return false;
 	}
 
