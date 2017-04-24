@@ -7,11 +7,22 @@
 #include <arpa/inet.h>
 
 #include "shell.h"
+#include "netsniff.h"
+#include "udp.h"
 
 enum {
 	PROTO_UDP = 0,
 	PROTO_TCP = 1
 };
+
+static int (*process_input_orig)(struct shell_struct *sh);
+static uint16_t port = 0;
+static uint32_t addr = 0;
+static struct {
+	const struct netif *ifp;
+	uint32_t ipaddr;
+	uint16_t port;
+} peer_addr;
 
 static void usage(void)
 {
@@ -43,7 +54,7 @@ parse_port(const char *s, uint16_t *port)
 		fprintf(stderr, "Ports must be in the range of 1-65535\n");
 		return false;
 	}
-	*port = u;
+	*port = htons(u);
 
 	return true;
 }
@@ -62,11 +73,41 @@ parse_inet_addr(const char *s, uint32_t *addr)
 	return true;
 }
 
+static void
+nc_udp_recv(const struct netif *ifp, const struct iphdr *sih,
+	    const struct udphdr *uh)
+{
+	printf("pkt recvd\n");
+	peer_addr.ifp = ifp;
+	peer_addr.ipaddr = sih->saddr;
+	peer_addr.port = uh->sport;
+}
+
+static int nc_udp_send(struct shell_struct *sh)
+{
+	char buf[1024];
+
+	if (!fgets(buf, sizeof(buf), sh->fp)) {
+		memset(&peer_addr, 0, sizeof(peer_addr));
+		sh->process_input = process_input_orig;
+		shell_display_prompt(sh);
+		return 1;
+	}
+
+	if (!peer_addr.ifp || !peer_addr.ipaddr || !peer_addr.port)
+		return 1;
+
+	udp_output((struct netif *)peer_addr.ifp,
+		   peer_addr.ifp->ipaddr, port,
+		   (ipv4_t)peer_addr.ipaddr, peer_addr.port,
+		   buf, strlen(buf));
+
+	return 1;
+}
+
 void nc_main(struct shell_struct *s, int argc, char *const argv[])
 {
 	int proto, lflag, ch;
-	uint16_t port = 0;
-	uint32_t addr = 0;
 
 	if (!argv[1])
 		goto out_usage;
@@ -105,6 +146,9 @@ void nc_main(struct shell_struct *s, int argc, char *const argv[])
 		if (!parse_port(argv[0], &port))
 			return;
 		printf("listening port: %s, %u\n", argv[0], port);
+		udp_bind(port, nc_udp_recv);
+		process_input_orig = s->process_input;
+		s->process_input = nc_udp_send;
 	} else if (argv[0] && argv[1] && !argv[2]) { /* client mode */
 		if (lflag)
 			goto out_usage;

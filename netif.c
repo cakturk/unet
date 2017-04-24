@@ -90,6 +90,8 @@ netif_init(struct netif *netif, char *ifnam, const char *ipaddr,
 		return -1;
 	memcpy(&netif->hwaddr, ether, ETH_ALEN);
 	netif_set_default_iface(netif);
+	mb_pool_init();
+	udp_init();
 	return 0;
 }
 
@@ -99,23 +101,18 @@ netif_poll(struct netif *netif)
 	struct mbuf_iovec mi;
 	ssize_t rc;
 
-	mb_pool_init();
-	udp_init();
-
-	for (;;) {
-		rc = mb_pool_sg_alloc(&mi);
-		if (rc < 1) {
-			fprintf(stderr, "Out of mem!\n");
-			exit(EXIT_FAILURE);
-		}
-		rc = readv(netif->tunfd, mi.iov, ARRAY_SIZE(mi.iov));
-		if (rc <= 0) {
-			fprintf(stderr, "Error reading interface\n");
-			exit(EXIT_FAILURE);
-		}
-		mb_pool_sg_free_excess(&mi, rc);
-		eth_input(netif, mi.buffs[0]);
+	rc = mb_pool_sg_alloc(&mi);
+	if (rc < 1) {
+		fprintf(stderr, "Out of mem!\n");
+		exit(EXIT_FAILURE);
 	}
+	rc = readv(netif->tunfd, mi.iov, ARRAY_SIZE(mi.iov));
+	if (rc <= 0) {
+		fprintf(stderr, "Error reading interface\n");
+		exit(EXIT_FAILURE);
+	}
+	mb_pool_sg_free_excess(&mi, rc);
+	eth_input(netif, mi.buffs[0]);
 
 	return 0;
 }

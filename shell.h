@@ -10,5 +10,6 @@ struct shell_struct {
 };
 
 struct shell_struct *shell_init(FILE *fp, const char *prompt);
+void shell_display_prompt(const struct shell_struct *sh);
 
 #endif

@@ -5,9 +5,12 @@
 #include "checksum.h"
 #include "netif.h"
 
-struct netif;
-
 static uint16_t udp_id;
+static struct {
+	uint16_t port;
+	void (*cb)(const struct netif *ifp, const struct iphdr *sih,
+		   const struct udphdr *uh);
+} port_waiter;
 
 void
 udp_init(void)
@@ -19,7 +22,7 @@ udp_init(void)
 	udp_id = err ? 0xcafe : (tv.tv_sec + tv.tv_usec) & 0xffff;
 }
 
-static unsigned count;
+/* static unsigned count; */
 static void udp_test_output(struct netif *ifp);
 
 void
@@ -47,10 +50,13 @@ udp_input(struct netif *ifp, struct mbuf *m)
 		goto drop;
 	}
 	printf("receiving UDP\n");
-	if (count++ > 3) {
-		printf("sending UDP\n");
-		udp_test_output(ifp);
-	}
+	/* if (count++ > 3) { */
+	/* 	printf("sending UDP\n"); */
+	/* 	udp_test_output(ifp); */
+	/* } */
+	if (!uh->dport || port_waiter.port != uh->dport)
+		goto drop;
+	port_waiter.cb(ifp, iph, uh);
 	return;
 drop:
 	mb_pool_chain_free(m);
@@ -78,10 +84,10 @@ udp_output(struct netif *ifp,
 	/* UDP header */
 	uh = mb_put(m, sizeof(*uh));
 	/* UDP payload */
-	strcpy(mb_put(m, len), buf);
+	memcpy(mb_put(m, len), buf, len);
 
-	uh->sport = htons(sport);
-	uh->dport = htons(dport);
+	uh->sport = sport;
+	uh->dport = dport;
 	uh->len = htons(sizeof(*uh) + len);
 	uh->csum = 0;
 
@@ -91,12 +97,26 @@ udp_output(struct netif *ifp,
 	ip_output(ifp, m, udp_id++, IPPROTO_UDP, saddr.addr, daddr.addr);
 }
 
-static void
+void udp_bind(uint16_t port, void (*on_udp_dgram)(const struct netif *ifp,
+						  const struct iphdr *ih,
+						  const struct udphdr *uh))
+{
+	port_waiter.port = port;
+	port_waiter.cb = on_udp_dgram;
+}
+
+void udp_unbind(void)
+{
+	port_waiter.port = 0;
+	port_waiter.cb = NULL;
+}
+
+static void __attribute__ ((unused))
 udp_test_output(struct netif *ifp)
 {
 	ipv4_t saddr = { .data = {172, 28, 128, 44} };
 	ipv4_t daddr = { .data = {172, 28, 128, 5} };
 	const char msg[] = "Beam me up, Scotty!\n";
 
-	udp_output(ifp, saddr, 12345, daddr, 33333, msg, sizeof(msg)-1);
+	udp_output(ifp, saddr, htons(12345), daddr, htons(33333), msg, sizeof(msg)-1);
 }

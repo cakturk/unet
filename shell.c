@@ -9,6 +9,8 @@ struct shell_cmd {
 	void (*cmd_fn)(struct shell_struct *s, int argc, char *const argv[]);
 };
 
+static struct shell_struct sh;
+
 extern void ip_cmd_main(struct shell_struct *s, int argc, char *const argv[]);
 extern void hwaddr_main(struct shell_struct *s, int argc, char *const argv[]);
 extern void route_main(struct shell_struct *s, int argc, char *const argv[]);
@@ -58,7 +60,7 @@ static void shell_run_cmd(int argc, char *const argv[])
 
 	for (cmd = &cmd_list[0]; cmd->cmd_name; cmd++) {
 		if (!strcmp(argv0, cmd->cmd_name))
-			return cmd->cmd_fn(NULL, argc, argv);
+			return cmd->cmd_fn(&sh, argc, argv);
 	}
 
 	fprintf(stderr, "Command \"%s\" is unknown, try \"help\".\n", argv0);
@@ -74,7 +76,7 @@ arg_print(int argc, const char *argv[])
 		printf("%s\n", argv[i]);
 }
 
-static void shell_display_prompt(const struct shell_struct *sh)
+void shell_display_prompt(const struct shell_struct *sh)
 {
 	fprintf(stdout, "%s", sh->prompt);
 	fflush(stdout);
@@ -88,7 +90,6 @@ static int shell_process_input(struct shell_struct *ss)
 	char *argv[ARGV_SIZE], buf[1024], *cp;
 	int argc;
 
-	/* fprintf(stdout, "%s", ss->prompt); */
 	if (!fgets(buf, sizeof(buf), ss->fp)) {
 		fprintf(stdout, "\n");
 		return 0;
@@ -117,15 +118,14 @@ static int shell_process_input(struct shell_struct *ss)
 	argv[argc] = NULL;
 	if (argc)
 		shell_run_cmd(argc, argv);
-	shell_display_prompt(ss);
+	if (ss->process_input == shell_process_input)
+		shell_display_prompt(ss);
 
 	return 1;
 }
 
 struct shell_struct *shell_init(FILE *fp, const char *prompt)
 {
-	static struct shell_struct sh;
-
 	sh.fp = stdin;
 	sh.process_input = shell_process_input;
 	sh.prompt = prompt;

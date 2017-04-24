@@ -50,12 +50,13 @@ int main(int argc, char *argv[])
 	       iface_name, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
 	       ip->data[0], ip->data[1], ip->data[2], ip->data[3]);
 
+	/* stdin */
 	fds[0].fd = netif.tunfd;
 	fds[0].events = POLLIN;
 
-	/* netif_poll(&netif); */
 	sh = shell_init(stdin, "unet-shell-> ");
 
+	/* network in */
 	fds[1].fd = fileno(sh->fp);
 	fds[1].events = POLLIN;
 
@@ -65,19 +66,21 @@ int main(int argc, char *argv[])
 		do
 			rc = poll(fds, 2, -1);
 		while (rc == -1 && errno == EINTR);
-
+		if (rc == -1) {
+			fprintf(stderr, "poll: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
 		if (rc == 0) {
 			fprintf(stderr, "No events found\n");
 			break;
 		}
 
-		if (0 && fds[0].revents & POLLIN) {
-			/* printf("pkt received\n"); */
+		if (fds[0].revents & POLLIN) {
+			netif_poll(&netif);
 		}
 		if (fds[1].revents & POLLIN) {
 			int ok;
 
-			/* printf("input received\n"); */
 			ok = sh->process_input(sh);
 			if (!ok)
 				break;
