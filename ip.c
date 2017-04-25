@@ -47,16 +47,21 @@ drop:
 	mb_chain_free(m);
 }
 
+static inline ipv4_t route_dst(const struct netif *ifp, uint32_t daddr)
+{
+	if ((daddr & ifp->mask.addr) == (ifp->ipaddr.addr & ifp->mask.addr))
+		return (ipv4_t)daddr;
+	return ifp->gateway;
+}
+
 void
 ip_output(struct netif *ifp, struct mbuf *m,
 	  uint16_t id, uint8_t proto,
 	  uint32_t saddr, uint32_t daddr)
 {
 	struct iphdr *ih;
-	hwaddr_t      desteth;
-	ipv4_t	      ipv = { .addr = daddr };
-	/* static uint8_t dest[] = {0xfe, 0x54, 0x00, 0x04, 0xc7, 0xf8}; */
-	/* static uint8_t dest[] = {0x52, 0x54, 0x00, 0xb6, 0xe0, 0xc1}; */
+	hwaddr_t      dsteth;
+	ipv4_t	      dstip;
 
 	ih = mb_push(m, sizeof(*ih));
 	ih->version = 4;
@@ -74,6 +79,7 @@ ip_output(struct netif *ifp, struct mbuf *m,
 	ih->check = 0;
 	ih->check = ip_csum(ih, ip_hdrlen(ih), 0);
 
-	if (arp_resolve(ifp, ipv, m, &desteth))
-		eth_output(ifp, m, desteth.data, ETH_P_IP);
+	dstip = route_dst(ifp, daddr);
+	if (arp_resolve(ifp, dstip, m, &dsteth))
+		eth_output(ifp, m, dsteth.data, ETH_P_IP);
 }
