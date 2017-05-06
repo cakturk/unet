@@ -83,7 +83,7 @@ MU_TEST(test_mbuf_chain)
 	struct chain_test_helper cth;
 	uint16_t rfcsum, sum;
 
-	fill_mbuffs_with_random_bytes(&cth, 4, 1, 109, 5, 8, 3);
+	fill_mbuffs_with_random_bytes(&cth, 5, 1, 109, 5, 8, 3);
 	rfcsum = ip_csum(cth.chain_cont, cth.size, 0);
 	sum    = ip_csum_mb(cth.head, 0);
 	mu_assert_int_eq(rfcsum, sum);
