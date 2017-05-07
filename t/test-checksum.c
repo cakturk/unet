@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>  /* open */
 #include <unistd.h> /* read */
 #include <errno.h>
@@ -10,6 +11,10 @@
 #include <assert.h>
 #include "minunit.h"
 #include "../checksum.c"
+
+#define REND 0
+#define WEND 1
+#define MAX_UDP_PKT 576
 
 static ssize_t read_nr_bytes(int fd, void *buf, size_t n)
 {
@@ -31,6 +36,41 @@ static ssize_t read_nr_bytes(int fd, void *buf, size_t n)
 	}
 
 	return total;
+}
+
+/**
+ * buf size must be equivalent to at least MAX_UDP_PKT bytes
+ */
+ssize_t rnd_udp_pkt(char *buf)
+{
+	int fdpair[2], wstatus;
+	ssize_t retval = -1;
+	pid_t pid;
+
+	if (pipe(fdpair))
+		goto err_out;
+	pid = fork();
+	switch (pid) {
+	case 0:
+		close(fdpair[REND]);
+		dup2(fdpair[WEND], STDOUT_FILENO);
+		execl("gen-pkt.py", "gen-pkt.py", "", "", "0", NULL);
+		/* NOTREACHED */
+		goto err_out;
+	default:
+		close(fdpair[WEND]);
+		retval = read_nr_bytes(fdpair[REND], buf, MAX_UDP_PKT);
+		if (retval <= 0)
+			goto err_out;
+		waitpid(pid, &wstatus, 0);
+		break;
+	case -1:
+		goto err_out;
+	}
+	return retval;
+err_out:
+	fprintf(stderr, "Something failed: %s\n", errno ? strerror(errno) : "");
+	return retval;
 }
 
 static ssize_t read_random_nr_bytes(void *buf, size_t n)
@@ -161,11 +201,49 @@ again:
 	close(fd);
 }
 
+MU_TEST(test_udp_cksum)
+{
+	ssize_t ret;
+	char buf[MAX_UDP_PKT];
+	char buf2[MAX_UDP_PKT];
+	struct mbuf m;
+	struct iphdr *ih;
+	struct udphdr *uh;
+	struct udphdr_pseudo *uhp;
+
+	mb_init(&m);
+	mb_reserve(&m, MB_IP_ALIGN + sizeof(struct udphdr_pseudo));
+	ret = rnd_udp_pkt(buf);
+	mu_check(ret >= sizeof(struct iphdr));
+
+	memcpy(mb_put(&m, ret), buf, ret);
+	ih = mb_htrim(&m, sizeof(*ih));
+	fprintf(stderr, "\n cksum: %x\n", ntohs(ih->check));
+	fprintf(stderr, " compt: %x\n", ip_csum(ih, ip_hdrlen(ih), 0x0000));
+	fprintf(stderr, " tot: %u\n", ntohs(ih->tot_len));
+
+	uh = mb_head(&m);
+	fprintf(stderr, " ulen: %u\n", ntohs(uh->len));
+	fprintf(stderr, " usum: %x\n", uh->csum);
+	fprintf(stderr, " ucmp: %x\n", ip_udp_csum(ih->saddr, ih->daddr, uh));
+
+	uhp = mb_push(&m, sizeof(*uhp));
+	uhp->saddr = ih->saddr;
+	uhp->daddr = ih->daddr;
+	uhp->zero_pad = 0;
+	uhp->proto = IPPROTO_UDP;
+	uhp->udplength = uh->len;
+	fprintf(stderr, " pseudo: %x\n",
+		ip_csum(uhp, ntohs(uhp->udplength) + sizeof(*uhp), 0));
+	fprintf(stderr, " pseumb: %x\n", ip_csum_mb(&m, 0));
+}
+
 MU_TEST_SUITE(test_suite)
 {
 	MU_RUN_TEST(test_rfc1071_sum);
 	MU_RUN_TEST(test_mbuf_chain);
 	MU_RUN_TEST(test_cksum_mb);
+	MU_RUN_TEST(test_udp_cksum);
 }
 
 int

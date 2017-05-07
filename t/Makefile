@@ -1,4 +1,4 @@
-CFLAGS = -g3 -O2 -Wall -Wno-unused -pipe
+CFLAGS = -g3 -O2 -Wall -Wno-unused -pipe -fno-strict-aliasing
 srcdir = ../
 
 # For more information about 'rwildcard' please visit

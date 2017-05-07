@@ -1,15 +1,15 @@
 #include <stddef.h>	/* size_t */
-#include <stdint.h>
 #include <netinet/in.h>	/* IPPROTO_* */
 
 #include "netsniff.h"
+#include "checksum.h"
 #include "mbuf.h"
 
 /*
  * XXX: This routine is very heavily used in the network
  * code and should be modified for each CPU to be as fast as possible.
  */
-uint16_t ip_csum(const void *d, size_t len, uint32_t sum)
+uint32_t ip_csum_nocompl(const void *d, size_t len, uint32_t sum)
 {
 	const uint8_t *buf = d;
 	uint32_t acc = sum;
@@ -25,10 +25,7 @@ uint16_t ip_csum(const void *d, size_t len, uint32_t sum)
 	if (len)
 		acc += *buf;
 
-	acc = (acc & 0xffff) + (acc >> 16);
-	acc = (acc & 0xffff) + (acc >> 16);
-
-	return ~(acc);
+	return (acc);
 }
 
 /*
@@ -112,32 +109,39 @@ uint16_t rfc1071_csum(const void *d, size_t count, uint32_t sum)
 	return ~(sum);
 }
 
+struct udphdr_pseudo {
+	uint32_t saddr;
+	uint32_t daddr;
+	uint8_t  zero_pad;
+	uint8_t  proto;
+	uint16_t udplength;
+};
+
 uint16_t ip_udp_csum(uint32_t src, uint32_t dst, struct udphdr *uh)
 {
 	uint32_t sum = 0x0000;
-
-	sum += src;
-	sum += dst;
-
-	sum += IPPROTO_UDP << 8;
-	sum += uh->len;
-
+	const struct udphdr_pseudo psh = {
+		.saddr = src,
+		.daddr = dst,
+		.zero_pad = 0,
+		.proto = IPPROTO_UDP,
+		.udplength = uh->len
+	};
+	sum = ip_csum_nocompl(&psh, sizeof(psh), 0);
 	return ip_csum(uh, ntohs(uh->len), sum);
 }
 
 uint16_t ip_udp_csum_mb(uint32_t src, uint32_t dst, const struct mbuf *m)
 {
-	struct udphdr *uh;
 	uint32_t sum = 0x0000;
-
-	uh = mb_head(m);
-
-	sum += src;
-	sum += dst;
-
-	sum += IPPROTO_UDP << 8;
-	sum += uh->len;
-
+	const struct udphdr *uh = mb_head(m);
+	const struct udphdr_pseudo psh = {
+		.saddr = src,
+		.daddr = dst,
+		.zero_pad = 0,
+		.proto = IPPROTO_UDP,
+		.udplength = uh->len
+	};
+	sum = ip_csum_nocompl(&psh, sizeof(psh), 0);
 	return ip_csum_mb(m, sum);
-	/* return ip_csum(uh, ntohs(uh->len), sum); */
 }
