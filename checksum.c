@@ -117,7 +117,7 @@ struct udphdr_pseudo {
 	uint16_t udplength;
 };
 
-uint16_t ip_udp_csum(uint32_t src, uint32_t dst, struct udphdr *uh)
+uint16_t ip_udp_csum(uint32_t src, uint32_t dst, const struct udphdr *uh)
 {
 	uint32_t sum = 0x0000;
 	const struct udphdr_pseudo psh = {
