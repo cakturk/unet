@@ -80,7 +80,9 @@ else
 fi
 
 # Install development tools
-dnf install -y make gcc
+dnf install -y make gcc python-pip
+pip install --upgrade pip
+pip install scapy scapy-real
 
 # set up a tap interface connected to a bridge
 systemctl disable NetworkManager
