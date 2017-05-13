@@ -40,7 +40,7 @@ udp_input(struct netif *ifp, struct mbuf *m)
 	}
 
 	uh = mb_head(m);
-	if (ntohs(uh->len) < mb_datalen(m)) {
+	if (mb_datalen(m) < ntohs(uh->len)) {
 		fprintf(stderr, "UDP: packet too small for the payload\n");
 		goto drop;
 	}
