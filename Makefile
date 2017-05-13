@@ -5,6 +5,7 @@ OBJECTS = program_options.o eth_print.o ip_print.o \
 	  route_cmd.o nc_cmd.o shell.o main.o
 PROGRAM = unet
 LDLIBS =
+CPPFLAGS += $(EXTRA_CPPFLAGS)
 
 ifndef ($(findstring $(MAKEFLAGS),s),s)
 ifndef V

@@ -7,6 +7,7 @@
 #include "checksum.h"
 #include "etherif.h"
 #include "arp.h"
+#include "unet.h"
 
 static char fmt_buf[1024];
 
@@ -29,7 +30,7 @@ ip_input(struct netif *ifp, struct mbuf *m)
 
 	sb_reset(&sb);
 	if (iphdr_print(iph, &sb) == 0)
-		printf("ip: %s\n", sb.buf);
+		pr_dbg("ip: %s\n", sb.buf);
 
 	/* IP proto demux */
 	switch (iph->protocol) {
@@ -37,7 +38,7 @@ ip_input(struct netif *ifp, struct mbuf *m)
 		udp_input(ifp, m);
 		break;
 	case IPPROTO_TCP:
-		printf("TCP\n");
+		pr_dbg("TCP\n");
 		/* FALLTHROUGH */
 	default:
 		goto drop;

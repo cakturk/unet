@@ -9,6 +9,7 @@
 #include "shell.h"
 #include "netsniff.h"
 #include "udp.h"
+#include "unet.h"
 
 enum {
 	PROTO_UDP = 0,
@@ -77,7 +78,7 @@ static void
 nc_udp_recv(const struct netif *ifp, const struct iphdr *sih,
 	    const struct udphdr *uh)
 {
-	printf("pkt recvd\n");
+	pr_dbg("pkt recvd\n");
 	peer_addr.ifp = ifp;
 	peer_addr.ipaddr = sih->saddr;
 	peer_addr.port = uh->sport;

@@ -5,6 +5,7 @@
 #include "etherif.h"
 #include "mbuf.h"
 #include "arp.h"
+#include "unet.h"
 
 #define ARP_NR_MAX_ENTRIES 10
 
@@ -98,12 +99,13 @@ int arp_resolve(struct netif *ifp, ipv4_t dstaddr,
 void
 arp_print(struct arphdr *hdr)
 {
+#ifdef DEBUG
 	char sip[sizeof("255.255.255.255")];
 	char tip[sizeof(sip)];
 	char sha[sizeof("ff:ff:ff:ff:ff:ff")];
 	char tha[sizeof(sha)];
 
-	printf("ARP packet (%zu) bytes\n"
+	pr_dbg("ARP packet (%zu) bytes\n"
 	       "ar_hrd: %hu\n"
 	       "ar_pro: %hu\n"
 	       "ar_hln: %u\n"
@@ -123,6 +125,7 @@ arp_print(struct arphdr *hdr)
 	       inet_ntop(AF_INET, ar_spa(hdr), sip, 32),
 	       macstr(tha, ar_tha(hdr)),
 	       inet_ntop(AF_INET, ar_tpa(hdr), tip, 32));
+#endif
 }
 
 static void
@@ -144,7 +147,7 @@ arp_reply(struct netif *rcvif, struct arphdr *req)
 	memcpy(ar_spa(resp), &rcvif->ipaddr, sizeof(rcvif->ipaddr));
 	memcpy(ar_tha(resp), ar_sha(req), HWADDR_LEN);
 	memcpy(ar_tpa(resp), ar_spa(req), sizeof(rcvif->ipaddr));
-	printf("Response\n");
+	pr_dbg("Response\n");
 	arp_print(resp);
 	eth_output(rcvif, mbuf, ar_tha(resp), ETH_P_ARP);
 }
@@ -205,7 +208,7 @@ arp_request(struct netif *ifp, ipv4_t *sip, ipv4_t *tip, hwaddr_t *ether)
 	memcpy(ar_spa(ap), sip, sizeof(*sip));
 	memcpy(ar_tha(ap), zeromac, HWADDR_LEN);
 	memcpy(ar_tpa(ap), tip, sizeof(*tip));
-	printf("Request\n");
+	pr_dbg("Request\n");
 	arp_print(ap);
 	eth_output(ifp, m, broadcastmac, ETH_P_ARP);
 }

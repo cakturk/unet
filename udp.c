@@ -4,6 +4,7 @@
 #include "mbuf.h"
 #include "checksum.h"
 #include "netif.h"
+#include "unet.h"
 
 static uint16_t udp_id;
 static struct {
@@ -49,11 +50,7 @@ udp_input(struct netif *ifp, struct mbuf *m)
 		fprintf(stderr, "UDP: bad checksum\n");
 		goto drop;
 	}
-	printf("receiving UDP\n");
-	/* if (count++ > 3) { */
-	/* 	printf("sending UDP\n"); */
-	/* 	udp_test_output(ifp); */
-	/* } */
+	pr_dbg("receiving UDP\n");
 	if (!uh->dport || port_waiter.port != uh->dport)
 		goto drop;
 	port_waiter.cb(ifp, iph, uh);
