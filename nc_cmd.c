@@ -91,6 +91,7 @@ static int nc_udp_send(struct shell_struct *sh)
 	char buf[1024];
 
 	if (!fgets(buf, sizeof(buf), sh->fp)) {
+		udp_unbind();
 		memset(&peer_addr, 0, sizeof(peer_addr));
 		sh->process_input = process_input_orig;
 		shell_display_prompt(sh);
