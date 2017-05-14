@@ -9,3 +9,8 @@
 # exclude generated directories
 .depend/
 .vagrant/
+
+# exclude tags and cscope files
+/tags
+/TAGS
+cscope.*
