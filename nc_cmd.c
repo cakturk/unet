@@ -18,13 +18,11 @@ enum {
 };
 
 static int (*process_input_orig)(struct shell_struct *sh);
-static uint16_t port = 0;
-static uint32_t addr = 0;
 static struct {
 	const struct netif *ifp;
 	uint32_t ipaddr;
 	uint16_t port;
-} peer_addr;
+} peer_addr, local_addr;
 
 static void usage(void)
 {
@@ -86,7 +84,7 @@ nc_udp_recv(const struct netif *ifp, const struct iphdr *sih,
 	peer_addr.port = uh->sport;
 }
 
-static int nc_udp_send(struct shell_struct *sh)
+static int nc_udp_reply(struct shell_struct *sh)
 {
 	char buf[1024];
 
@@ -102,10 +100,27 @@ static int nc_udp_send(struct shell_struct *sh)
 		return 1;
 
 	udp_output((struct netif *)peer_addr.ifp,
-		   peer_addr.ifp->ipaddr, port,
+		   peer_addr.ifp->ipaddr, local_addr.port,
 		   (ipv4_t)peer_addr.ipaddr, peer_addr.port,
 		   buf, strlen(buf));
 
+	return 1;
+}
+
+static int nc_udp_send(struct shell_struct *sh)
+{
+	char buf[1024];
+
+	if (!fgets(buf, sizeof(buf), sh->fp)) {
+		udp_unbind();
+		sh->process_input = process_input_orig;
+		shell_display_prompt(sh);
+		return 1;
+	}
+	udp_output((struct netif *)peer_addr.ifp,
+		   peer_addr.ifp->ipaddr, local_addr.port,
+		   (ipv4_t)peer_addr.ipaddr, peer_addr.port,
+		   buf, strlen(buf));
 	return 1;
 }
 
@@ -147,20 +162,25 @@ void nc_main(struct shell_struct *s, int argc, char *const argv[])
 	if (argv[0] && !argv[1]) { /* listening mode */
 		if (!lflag)
 			goto out_usage;
-		if (!parse_port(argv[0], &port))
+		if (!parse_port(argv[0], &local_addr.port))
 			return;
-		printf("listening port: %s, %u\n", argv[0], port);
-		udp_bind(port, nc_udp_recv);
+		printf("listening port: %s, %u\n", argv[0], local_addr.port);
+		udp_bind(local_addr.port, nc_udp_recv);
 		process_input_orig = s->process_input;
-		s->process_input = nc_udp_send;
+		s->process_input = nc_udp_reply;
 	} else if (argv[0] && argv[1] && !argv[2]) { /* client mode */
 		if (lflag)
 			goto out_usage;
-		if (!parse_inet_addr(argv[0], &addr))
+		if (!parse_inet_addr(argv[0], &peer_addr.ipaddr))
 			return;
-		if (!parse_port(argv[1], &port))
+		if (!parse_port(argv[1], &peer_addr.port))
 			return;
-		printf("client: %s:%u\n", argv[0], port);
+		printf("client: %s:%u\n", argv[0], peer_addr.port);
+		local_addr.port = udp_next_port();
+		udp_bind(local_addr.port, nc_udp_recv);
+		peer_addr.ifp = netif_default_iface();
+		process_input_orig = s->process_input;
+		s->process_input = nc_udp_send;
 	}
 
 	return;

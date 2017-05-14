@@ -1,4 +1,5 @@
 #include <sys/time.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "netsniff.h"
 #include "mbuf.h"
@@ -7,6 +8,7 @@
 #include "unet.h"
 
 static uint16_t udp_id;
+static uint16_t udp_port;
 static struct {
 	uint16_t port;
 	void (*cb)(const struct netif *ifp, const struct iphdr *sih,
@@ -21,6 +23,19 @@ udp_init(void)
 
 	err = gettimeofday(&tv, NULL);
 	udp_id = err ? 0xcafe : (tv.tv_sec + tv.tv_usec) & 0xffff;
+
+	srand(tv.tv_sec);
+	udp_port = (rand() % (0xffff - 1024)) + 1024;
+}
+
+uint16_t
+udp_next_port(void)
+{
+	uint16_t ret;
+
+	ret = udp_port++;
+	udp_port = (udp_port % (0xffff - 1024)) + 1024;
+	return ret;
 }
 
 /* static unsigned count; */
@@ -36,13 +51,13 @@ udp_input(struct netif *ifp, struct mbuf *m)
 	mb_htrim(m, ip_hdrlen(iph));
 
 	if (mb_datalen(m) < sizeof(*uh)) {
-		fprintf(stderr, "UDP: packet too small for the header\n");
+		fpr_dbg(stderr, "UDP: packet too small for the header\n");
 		goto drop;
 	}
 
 	uh = mb_head(m);
 	if (mb_datalen(m) < ntohs(uh->len)) {
-		fprintf(stderr, "UDP: packet too small for the payload\n");
+		fpr_dbg(stderr, "UDP: packet too small for the payload\n");
 		goto drop;
 	}
 

@@ -9,6 +9,7 @@ struct udphdr;
 struct iphdr;
 
 void udp_init(void);
+uint16_t udp_next_port(void);
 void udp_input(struct netif *ifp, struct mbuf *m);
 void udp_output(struct netif *ifp,
 		ipv4_t saddr, uint16_t sport,
