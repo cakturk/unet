@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -79,6 +80,7 @@ nc_udp_recv(const struct netif *ifp, const struct iphdr *sih,
 	    const struct udphdr *uh)
 {
 	pr_dbg("pkt recvd\n");
+	write(STDOUT_FILENO, uh->payload, udp_payload_len(uh));
 	peer_addr.ifp = ifp;
 	peer_addr.ipaddr = sih->saddr;
 	peer_addr.port = uh->sport;

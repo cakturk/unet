@@ -166,8 +166,10 @@ struct udphdr {
 	uint16_t dport;
 	uint16_t len;
 	uint16_t csum;
+	char     payload[];
 };
 #define udp_hdr(ptr) ((struct udphdr *)(ptr))
+#define udp_payload_len(uh) (ntohs((uh)->len) - sizeof(*(uh)))
 
 /* TCP segment */
 struct tcphdr {
