@@ -136,10 +136,10 @@ void nc_main(struct shell_struct *s, int argc, char *const argv[])
 	proto = PROTO_TCP;
 	lflag = 0;
 
-	/* Reinitialize 'getopt'. Note that to re-initialize getopt on BSDs
-	 * the variable 'optreset' must also be set to 1.
+	/* XXX - Reinitialize 'getopt'. Note that to re-initialize getopt on
+	 * BSDs the variable 'optreset' must also be set to 1.
 	 */
-	optind = 1;
+	optind = 0;
 	while ((ch = getopt(argc, argv, "ul")) != -1) {
 		switch (ch) {
 		case 'u':
