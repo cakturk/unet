@@ -13,7 +13,8 @@ getting a Linux box with all the dependencies installed and properly
 configured is just a breeze. Just issue the following commands::
 
   $ vagrant up
-  $ cd /vagrant_data # change your directory to the source tree
+  # change your working directory to the root of the source tree
+  $ cd /vagrant_data
   $ make
   $ make check
 
