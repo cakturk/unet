@@ -18,6 +18,6 @@ void udp_output(struct netif *ifp,
 
 void udp_bind(uint16_t port, void (*on_udp_dgram)(const struct netif *ifp,
 						  const struct iphdr *ih,
-						  const struct udphdr *uh));
+						  struct mbuf *m));
 void udp_unbind(void);
 #endif

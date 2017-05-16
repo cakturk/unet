@@ -12,7 +12,7 @@ static uint16_t udp_port;
 static struct {
 	uint16_t port;
 	void (*cb)(const struct netif *ifp, const struct iphdr *sih,
-		   const struct udphdr *uh);
+		   struct mbuf *m);
 } port_waiter;
 
 void
@@ -68,7 +68,7 @@ udp_input(struct netif *ifp, struct mbuf *m)
 	pr_dbg("receiving UDP\n");
 	if (!uh->dport || port_waiter.port != uh->dport)
 		goto drop;
-	port_waiter.cb(ifp, iph, uh);
+	port_waiter.cb(ifp, iph, m);
 	return;
 drop:
 	mb_pool_chain_free(m);
@@ -111,7 +111,7 @@ udp_output(struct netif *ifp,
 
 void udp_bind(uint16_t port, void (*on_udp_dgram)(const struct netif *ifp,
 						  const struct iphdr *ih,
-						  const struct udphdr *uh))
+						  struct mbuf *m))
 {
 	port_waiter.port = port;
 	port_waiter.cb = on_udp_dgram;

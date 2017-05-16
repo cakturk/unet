@@ -11,6 +11,7 @@
 #include "netsniff.h"
 #include "udp.h"
 #include "unet.h"
+#include "mbuf.h"
 
 enum {
 	PROTO_UDP = 0,
@@ -74,14 +75,18 @@ parse_inet_addr(const char *s, uint32_t *addr)
 }
 
 static void
-nc_udp_recv(const struct netif *ifp, const struct iphdr *sih,
-	    const struct udphdr *uh)
+nc_udp_recv(const struct netif *ifp, const struct iphdr *sih, struct mbuf *m)
 {
+	const struct udphdr *uh;
+
 	pr_dbg("pkt recvd\n");
+
+	uh = mb_head(m);
 	write(STDOUT_FILENO, uh->payload, udp_payload_len(uh));
 	peer_addr.ifp = ifp;
 	peer_addr.ipaddr = sih->saddr;
 	peer_addr.port = uh->sport;
+	mb_pool_chain_free(m);
 }
 
 static int nc_udp_reply(struct shell_struct *sh)
