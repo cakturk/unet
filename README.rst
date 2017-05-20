@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/cakturk/unet.svg?branch=master
+    :target: https://travis-ci.org/cakturk/unet
+
 uNet
 ====
 Just another toy userspace TCP/IP stack.
