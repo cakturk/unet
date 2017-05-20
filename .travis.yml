@@ -1,0 +1,14 @@
+language: c
+
+compiler:
+    - gcc
+
+before_install:
+    - sudo apt-get -qq update
+    - sudo apt-get install build-essential python-pip python-setuptools
+    - sudo pip install scapy
+
+script:
+    - sed -i -e 's/.*LDLIBS.*=/LDLIBS = -lrt/g' t/Makefile
+    - make
+    - make check
