@@ -14,6 +14,7 @@ OBJECTS := $(filter-out $(addprefix $(srcdir),$(incsources)),$(allobjects))
 
 PROGRAM = unet-test-runner
 LDLIBS =
+LDFLAGS += $(EXTRA_LDFLAGS)
 
 ifndef ($(findstring $(MAKEFLAGS),s),s)
 ifndef V
