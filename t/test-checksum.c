@@ -25,7 +25,7 @@ static ssize_t read_nr_bytes(int fd, void *buf, size_t n)
 		ssize_t ret;
 		if (n < 1)
 			break;
-		ret = read(fd, buf, n);
+		ret = read(fd, p, n);
 		if (ret < 0 && (errno == EINTR || errno == EAGAIN))
 			continue;
 		if (ret == 0)
